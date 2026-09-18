@@ -37,9 +37,5 @@ class Attendance extends Model
     {
         return $this->hasMany(AttendanceCorrection::class);
     }
-    public function proposalBreakCorrections() : HasManyThrough
-    {
-        return $this->hasManyThrough(ProposalBreakCorrection::class, AttendanceCorrection::class);
-    }
-   
+    
 }
