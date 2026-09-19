@@ -16,15 +16,13 @@ class ProposalBreakCorrection extends Model
         'break_end_at',
     ];
 
-    public function attendanceCorrection() : BelongsTo
+    public function attendanceCorrection(): BelongsTo
     {
         return $this->belongsTo(AttendanceCorrection::class);
     }
 
-    public function proposal_break() : BelongsTo
+    public function proposal_break(): BelongsTo
     {
         return $this->belongsTo(ProposalBreak::class);
     }
-
-
 }
