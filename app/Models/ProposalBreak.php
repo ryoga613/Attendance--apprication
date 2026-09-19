@@ -18,16 +18,13 @@ class ProposalBreak extends Model
         'break_time',
     ];
 
-   
-
-    public function attendance() : BelongsTo
+    public function attendance(): BelongsTo
     {
         return $this->belongsTo(Attendance::class);
     }
 
-    public function proposalBreakCorrections() : HasMany
+    public function proposalBreakCorrections(): HasMany
     {
         return $this->hasMany(ProposalBreakCorrection::class);
     }
-    
 }

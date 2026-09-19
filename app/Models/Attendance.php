@@ -4,11 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\ProposalBreak;
-use App\Models\AttendanceCorrection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Attendance extends Model
 {
@@ -23,19 +20,18 @@ class Attendance extends Model
         'work_time',
     ];
 
-    public function user() : BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function proposalBreaks() : HasMany
+    public function proposalBreaks(): HasMany
     {
         return $this->hasMany(ProposalBreak::class);
     }
 
-    public function attendanceCorrections() : HasMany
+    public function attendanceCorrections(): HasMany
     {
         return $this->hasMany(AttendanceCorrection::class);
     }
-    
 }
