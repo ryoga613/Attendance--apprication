@@ -41,14 +41,7 @@ class AttendanceSeeder extends Seeder
                         'work_date' => $date->toDateString(),
                         'clock_in_at' => $date->copy()->setTime(9, 0, 0),
                         'clock_out_at' => $date->copy()->setTime(18, 0, 0),
-                    ]);
-
-                    ProposalBreak::create([
-                        'attendance_id' => $attendance->id,
-                        'break_start_at' => $date->copy()->setTime(12, 0, 0),
-                        'break_end_at' => $date->copy()->setTime(13, 0, 0),
-                    ]);
-
+                 ]);
                     $weekdayCount++;
                 }
                 $date->addDay();
