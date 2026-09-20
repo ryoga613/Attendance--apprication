@@ -21,6 +21,11 @@ class AttendanceCorrection extends Model
         'correction_work_time',
     ];
 
+    protected $casts = [
+        'work_date' => 'date',
+        'clock_in_at' => 'datetime',
+        'clock_out_at' => 'datetime', ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
