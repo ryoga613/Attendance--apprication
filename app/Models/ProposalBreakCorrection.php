@@ -12,6 +12,7 @@ class ProposalBreakCorrection extends Model
 
     protected $fillable = [
         'attendance_correction_id',
+        'proposal_break_id',
         'break_start_at',
         'break_end_at',
     ];

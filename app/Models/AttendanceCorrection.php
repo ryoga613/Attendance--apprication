@@ -12,13 +12,12 @@ class AttendanceCorrection extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'attendance_id',
-        'correction_type',
-        'correction_date',
-        'correction_start_time',
-        'correction_end_time',
-        'correction_break_time',
-        'correction_work_time',
+        'clock_in_at',
+        'clock_out_at',
+        'approval_status',
+        'comment',
     ];
 
     protected $casts = [
