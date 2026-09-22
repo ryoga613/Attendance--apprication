@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             AttendanceSeeder::class,
             AttendanceCorrectionSeeder::class,
             ProposalBreakSeeder::class,
+            ProposalBreakCorrectionSeeder::class,
         ]);
     }
 }

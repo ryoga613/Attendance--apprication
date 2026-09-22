@@ -41,7 +41,7 @@ class AttendanceSeeder extends Seeder
                         'work_date' => $date->toDateString(),
                         'clock_in_at' => $date->copy()->setTime(9, 0, 0),
                         'clock_out_at' => $date->copy()->setTime(18, 0, 0),
-                 ]);
+                    ]);
                     $weekdayCount++;
                 }
                 $date->addDay();
