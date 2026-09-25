@@ -14,6 +14,6 @@ class LoginResponse implements LoginResponseContract
             return redirect()->route('admin.attendance.list');
         }
 
-        return redirect()->route('attendance.index')->with('error', '権限がありません。');
+        return redirect()->route('attendance.index')->with('error', 'アクセス権がありません。');
     }
 }
