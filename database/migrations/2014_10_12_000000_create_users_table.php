@@ -18,6 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('admin_status')->default(false);
+            $table->string('attendance_status')->default('勤務外');
             $table->rememberToken();
             $table->timestamps();
         });

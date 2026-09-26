@@ -13,8 +13,8 @@ class ProposalBreak extends Model
 
     protected $fillable = [
         'attendance_id',
-        'start_time',
-        'end_time',
+        'break_start_at',
+        'break_end_at',
         'break_time',
     ];
 
