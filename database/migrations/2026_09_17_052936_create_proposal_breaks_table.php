@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('proposal_breaks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('attendance_id')->constrained()->cascadeOnDelete();
-            $table->dateTime('break_start_at')->nullable();
+            $table->dateTime('break_start_at');
             $table->dateTime('break_end_at')->nullable();
             $table->timestamps();
         });

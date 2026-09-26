@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 
@@ -32,7 +33,9 @@ Route::prefix('admin')->group(function () {
 
 // 一般ユーザーミドルウェア
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/attendance', function () {
-        return '準備中だよ';
-    })->name('attendance.index');
+    Route::get('/attendance', [AttendanceController::class, 'attendanceRegisterForm'])->name('attendance.register.form');
+    Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+    // Route::post
+    Route::get('/attendance/list', [AttendanceController::class, 'index'])->name('attendance.list');
+
 });

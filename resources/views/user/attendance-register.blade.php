@@ -32,6 +32,7 @@
             @endif
         </div>
     </form>
+    <!-- <p>{{dd($user->attendance_status)}}</p> -->
 </div>
 
 <script>
