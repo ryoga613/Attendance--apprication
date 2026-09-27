@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
 use App\Models\ProposalBreak;
 use Carbon\Carbon;
