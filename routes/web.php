@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 
@@ -15,6 +16,9 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 |
 */
 
+// Route::get('/', function () {
+//     return view('user.user-login');
+// });
 // 管理者ルート
 Route::prefix('admin')->group(function () {
     Route::get('/login', function () {
@@ -37,5 +41,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
     // Route::post
     Route::get('/attendance/list', [AttendanceController::class, 'index'])->name('attendance.list');
-
+    Route::post('/logout', LogoutController::class)->name('user.logout');
 });

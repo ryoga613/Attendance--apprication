@@ -9,11 +9,14 @@ class LoginResponse implements LoginResponseContract
     public function toResponse($request)
     {
         $user = auth()->user();
+        if ($request->is('admin/login')) {
+            if ($user->admin_status) {
+                return redirect()->route('admin.attendance.list');
+            }
 
-        if ($user->admin_status) {
-            return redirect()->route('admin.attendance.list');
+            return redirect()->route('admin.login')->withErrors(['email' => 'ログイン情報が登録されていません。']);
         }
 
-        return redirect()->route('attendance.index')->with('error', 'アクセス権がありません。');
+        return redirect()->route('attendance.register.form');
     }
 }
