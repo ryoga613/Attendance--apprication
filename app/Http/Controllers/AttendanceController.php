@@ -11,17 +11,49 @@ use Illuminate\Support\Facades\Auth;
 class AttendanceController extends Controller
 {
     //
-    public function index()
+    public function index(Request $request)
     {
-        $formattedAttendanceRecords = Attendance::where('user_id', auth()->id())
-            ->whereYear('work_date', Carbon::now()->year)
-            ->whereMonth('work_date', Carbon::now()->month)
-            ->orderBy('work_date', 'desc')
+        $user = Auth::user();
+
+        $date = $request->query('date')
+            ? Carbon::createFromFormat('!Y-m', $request->query('date'))
+            : now()->startOfMonth();
+
+        $previousMonth = $date->copy()->subMonth()->format('Y-m');
+        $nextMonth = $date->copy()->addMonth()->format('Y-m');
+
+        $attendanceRecords = Attendance::with('proposalBreaks')
+            ->where('user_id', $user->id)
+            ->whereYear('work_date', $date->year)
+            ->whereMonth('work_date', $date->month)
+            ->orderBy('work_date')
             ->get();
 
-        $previousMonth = Carbon::now()->subMonth();
-        $nextMonth = Carbon::now()->addMonth();
-        $date = Carbon::now();
+        $formattedAttendanceRecords = $attendanceRecords->map(function ($attendance) {
+            $clockIn = $attendance->clock_in_at ? Carbon::parse($attendance->clock_in_at) : null;
+            $clockOut = $attendance->clock_out_at ? Carbon::parse($attendance->clock_out_at) : null;
+
+            $breakSeconds = 0;
+            foreach ($attendance->proposalBreaks as $break) {
+                if ($break->break_start_at && $break->break_end_at) {
+                    $breakSeconds += Carbon::parse($break->break_end_at)
+                        ->diffInSeconds(Carbon::parse($break->break_start_at));
+                }
+            }
+
+            $workSeconds = ($clockIn && $clockOut)
+                ? max($clockOut->diffInSeconds($clockIn) - $breakSeconds, 0)
+                : null;
+
+            return [
+                'id' => $attendance->id,
+                'date' => Carbon::parse($attendance->work_date)->locale('ja')->isoFormat('MM/DD(ddd)'),
+                'clock_in' => $clockIn ? $clockIn->format('H:i') : '',
+                'clock_out' => $clockOut ? $clockOut->format('H:i') : '',
+                'total_break_time' => $breakSeconds > 0 ? gmdate('H:i:s', $breakSeconds) : null,
+                'total_time' => $workSeconds !== null ? gmdate('H:i:s', $workSeconds) : null,
+            ];
+        });
 
         return view('user.user-attendance-list', compact('formattedAttendanceRecords', 'previousMonth', 'nextMonth', 'date'));
     }
@@ -38,16 +70,58 @@ class AttendanceController extends Controller
         return view('user.attendance-register', compact('todayAttendance', 'user', 'formattedDate', 'formattedTime'));
     }
 
+    public function detail($id)
+{
+    $user = Auth::user();
+
+    // 自分の勤怠だけ取得(他人のIDを直接指定されても見せない)
+    $attendance = Attendance::with('proposalBreaks')
+        ->where('user_id', $user->id)
+        ->findOrFail($id);
+
+    // 休憩時間の合計(分)
+    $breakMinutes = $attendance->proposalBreaks
+        ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
+        ->sum(fn ($b) => Carbon::parse($b->break_start_at)
+            ->diffInMinutes(Carbon::parse($b->break_end_at)));
+
+    $breakTime = sprintf('%d:%02d', intdiv($breakMinutes, 60), $breakMinutes % 60);
+
+    // 承認待ちの修正申請(リレーション名は実際のものに合わせてください)
+    $application = $attendance->attendanceCorrections()
+        ->where('approval_status', '承認待ち')
+        ->latest()
+        ->first();
+
+    $data = [
+        'id'          => $attendance->id,
+        'application' => $application,
+        'year'        => Carbon::parse($attendance->work_date)->format('Y年'),
+        'date'        => Carbon::parse($attendance->work_date)->format('n月j日'),
+        'clock_in'    => optional($attendance->clock_in_at)->format('H:i'),
+        'clock_out'   => optional($attendance->clock_out_at)->format('H:i'),
+        'breaks'      => $attendance->proposalBreaks->map(fn ($b) => [
+            'break_in'  => optional($b->break_start_at)->format('H:i'),
+            'break_out' => optional($b->break_end_at)->format('H:i'),
+        ])->values()->all(),
+        'break_time'  => $breakTime,
+        'comment'     => $attendance->comment,
+    ];
+    // dd(($attendance->proposalBreaks)->first());
+
+    return view('user.user-detail', compact('user', 'data'));
+}
+
     public function store(Request $request)
     {
         $user = Auth::user();
         $action = $request->input('action');
 
         return match ($action) {
-            'clock_in' => $this->clockIn($user),   // 出勤処理へ
-            'clock_out' => $this->clockOut($user),  // 退勤処理へ
-            'break_in' => $this->breakIn($user),   // 休憩入処理へ
-            'break_out' => $this->breakOut($user),// 休憩終処理へ
+            'clock_in' => $this->clockIn($user),
+            'clock_out' => $this->clockOut($user),
+            'break_in' => $this->breakIn($user),
+            'break_out' => $this->breakOut($user),
             default => redirect()->back($user),
         };
     }

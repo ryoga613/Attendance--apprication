@@ -18,6 +18,11 @@ class ProposalBreak extends Model
         'break_time',
     ];
 
+    protected $casts = [
+    'break_start_at' => 'datetime',
+    'break_end_at'   => 'datetime',
+];
+
     public function attendance(): BelongsTo
     {
         return $this->belongsTo(Attendance::class);
