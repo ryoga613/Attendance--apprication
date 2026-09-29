@@ -39,7 +39,7 @@ Route::prefix('admin')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'attendanceRegisterForm'])->name('attendance.register.form');
     Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
-    // Route::post
     Route::get('/attendance/list', [AttendanceController::class, 'index'])->name('attendance.list');
+    Route::get('/attendance/{id}', [AttendanceController::class, 'detail'])->name('attendance.show');
     Route::post('/logout', LogoutController::class)->name('user.logout');
 });
