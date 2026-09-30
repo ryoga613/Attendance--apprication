@@ -71,46 +71,46 @@ class AttendanceController extends Controller
     }
 
     public function detail($id)
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    // 自分の勤怠だけ取得(他人のIDを直接指定されても見せない)
-    $attendance = Attendance::with('proposalBreaks')
-        ->where('user_id', $user->id)
-        ->findOrFail($id);
+        // 自分の勤怠だけ取得(他人のIDを直接指定されても見せない)
+        $attendance = Attendance::with('proposalBreaks')
+            ->where('user_id', $user->id)
+            ->findOrFail($id);
 
-    // 休憩時間の合計(分)
-    $breakMinutes = $attendance->proposalBreaks
-        ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
-        ->sum(fn ($b) => Carbon::parse($b->break_start_at)
-            ->diffInMinutes(Carbon::parse($b->break_end_at)));
+        // 休憩時間の合計(分)
+        $breakMinutes = $attendance->proposalBreaks
+            ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
+            ->sum(fn ($b) => Carbon::parse($b->break_start_at)
+                ->diffInMinutes(Carbon::parse($b->break_end_at)));
 
-    $breakTime = sprintf('%d:%02d', intdiv($breakMinutes, 60), $breakMinutes % 60);
+        $breakTime = sprintf('%d:%02d', intdiv($breakMinutes, 60), $breakMinutes % 60);
 
-    // 承認待ちの修正申請(リレーション名は実際のものに合わせてください)
-    $application = $attendance->attendanceCorrections()
-        ->where('approval_status', '承認待ち')
-        ->latest()
-        ->first();
+        // 承認待ちの修正申請(リレーション名は実際のものに合わせてください)
+        $application = $attendance->attendanceCorrections()
+            ->where('approval_status', '承認待ち')
+            ->latest()
+            ->first();
 
-    $data = [
-        'id'          => $attendance->id,
-        'application' => $application,
-        'year'        => Carbon::parse($attendance->work_date)->format('Y年'),
-        'date'        => Carbon::parse($attendance->work_date)->format('n月j日'),
-        'clock_in'    => optional($attendance->clock_in_at)->format('H:i'),
-        'clock_out'   => optional($attendance->clock_out_at)->format('H:i'),
-        'breaks'      => $attendance->proposalBreaks->map(fn ($b) => [
-            'break_in'  => optional($b->break_start_at)->format('H:i'),
-            'break_out' => optional($b->break_end_at)->format('H:i'),
-        ])->values()->all(),
-        'break_time'  => $breakTime,
-        'comment'     => $attendance->comment,
-    ];
-    // dd(($attendance->proposalBreaks)->first());
+        $data = [
+            'id' => $attendance->id,
+            'application' => $application,
+            'year' => Carbon::parse($attendance->work_date)->format('Y年'),
+            'date' => Carbon::parse($attendance->work_date)->format('n月j日'),
+            'clock_in' => optional($attendance->clock_in_at)->format('H:i'),
+            'clock_out' => optional($attendance->clock_out_at)->format('H:i'),
+            'breaks' => $attendance->proposalBreaks->map(fn ($b) => [
+                'break_in' => optional($b->break_start_at)->format('H:i'),
+                'break_out' => optional($b->break_end_at)->format('H:i'),
+            ])->values()->all(),
+            'break_time' => $breakTime,
+            'comment' => $attendance->comment,
+        ];
+        // dd(($attendance->proposalBreaks)->first());
 
-    return view('user.user-detail', compact('user', 'data'));
-}
+        return view('user.user-detail', compact('user', 'data'));
+    }
 
     public function store(Request $request)
     {
@@ -151,7 +151,7 @@ class AttendanceController extends Controller
         ]);
 
         $user->update([
-            'attendance_status' => '退勤済',
+            'attendance_status' => '退勤後',
         ]);
 
         return redirect()->route('attendance.register.form');
