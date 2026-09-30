@@ -18,6 +18,7 @@ return new class extends Migration
             $table->dateTime('clock_in_at');
             $table->dateTime('clock_out_at')->nullable();
             $table->timestamps();
+            $table->unique(['user_id', 'work_date']);
         });
     }
 

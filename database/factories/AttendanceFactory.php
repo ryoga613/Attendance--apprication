@@ -22,7 +22,7 @@ class AttendanceFactory extends Factory
             'work_date' => $this->faker->dateTimeBetween('-5 months', 'now')->format('Y-m-d'),
             'clock_in_at' => $this->faker->dateTime('09:00:00')->format('H:i:s'),
             'clock_out_at' => $this->faker->dateTime('18:00:00')->format('H:i:s'),
-            'user_id' => User::where('email', 'user1@example.com')->first()->id,
-        ];
+            'user_id' => fn () => User::where('email', 'user1@example.com')->value('id')
+                    ?? User::factory()->create()->id,        ];
     }
 }
