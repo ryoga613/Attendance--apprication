@@ -26,7 +26,7 @@ class AttendanceCorrectionSeeder extends Seeder
             'attendance_id' => $attendance1->id,
             'clock_in_at' => $attendance1->work_date->setTime(9, 0, 0),
             'clock_out_at' => $attendance1->work_date->setTime(18, 0, 0),
-            'approval_status' => false,
+            'approval_status' => '承認待ち',
             'comment' => '出勤修正のコメント',
         ]);
 
@@ -36,7 +36,7 @@ class AttendanceCorrectionSeeder extends Seeder
             'attendance_id' => $attendance2->id,
             'clock_in_at' => $attendance2->work_date->setTime(9, 0, 0),
             'clock_out_at' => $attendance2->work_date->setTime(18, 0, 0),
-            'approval_status' => true,
+            'approval_status' => '承認済み',
             'comment' => '出勤修正のコメント',
         ]);
 
@@ -46,7 +46,7 @@ class AttendanceCorrectionSeeder extends Seeder
             'attendance_id' => $attendance3->id,
             'clock_in_at' => $attendance3->work_date->setTime(9, 0, 0),
             'clock_out_at' => $attendance3->work_date->setTime(18, 0, 0),
-            'approval_status' => false,
+            'approval_status' => '承認待ち',
             'comment' => '出勤修正のコメント',
         ]);
     }

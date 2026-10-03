@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Attendance;
-use App\Models\ProposalBreak;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -81,11 +80,6 @@ class AttendanceSeeder extends Seeder
                         'clock_out_at' => $date->copy()->setTimeFromTimeString($clockOut),
                     ]);
 
-                    ProposalBreak::create([
-                        'attendance_id' => $attendance->id,
-                        'break_start_at' => $date->copy()->setTimeFromTimeString('12:00'),
-                        'break_end_at' => $date->copy()->setTimeFromTimeString('13:00'),
-                    ]);
                     $createdCount++;
                     $date->addDay();
 
