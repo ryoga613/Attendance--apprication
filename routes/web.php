@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceCorrectionController;
 use App\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
@@ -41,5 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/list', [AttendanceController::class, 'index'])->name('attendance.list');
     Route::get('/attendance/{id}', [AttendanceController::class, 'detail'])->name('attendance.show');
+
+    Route::post('/attendance/{id}', [AttendanceCorrectionController::class, 'store'])->name('attendanceCorrection.store');
     Route::post('/logout', LogoutController::class)->name('user.logout');
 });

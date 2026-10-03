@@ -18,7 +18,7 @@ return new class extends Migration
             $table->dateTime('clock_in_at')->nullable();
             $table->dateTime('clock_out_at')->nullable();
             $table->text('comment');
-            $table->boolean('approval_status')->default(false);
+            $table->enum('approval_status', ['承認待ち', '承認済み'])->default('承認待ち');
             $table->timestamps();
         });
     }
