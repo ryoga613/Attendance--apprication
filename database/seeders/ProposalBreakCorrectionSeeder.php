@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AttendanceCorrection;
+use App\Models\ProposalBreak;
 use App\Models\ProposalBreakCorrection;
 use Illuminate\Database\Seeder;
 
@@ -17,10 +18,7 @@ class ProposalBreakCorrectionSeeder extends Seeder
 
         foreach ($proposalCorrections as $proposalCorrection) {
 
-            $attendance = $proposalCorrection->attendance;
-
-            $proposalBreak = $attendance->proposalBreaks->first();
-
+            $proposalBreak = ProposalBreak::where('attendance_id', $proposalCorrection->attendance_id)->first();
             ProposalBreakCorrection::create([
                 'attendance_correction_id' => $proposalCorrection->id,
                 'proposal_break_id' => $proposalBreak->id,

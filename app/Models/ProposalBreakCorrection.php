@@ -17,18 +17,23 @@ class ProposalBreakCorrection extends Model
         'break_end_at',
     ];
 
-    protected $casts = [
-        'break_start_at' => 'datetime',
-        'break_end_at' => 'datetime',
-    ];
-
     public function attendanceCorrection(): BelongsTo
     {
         return $this->belongsTo(AttendanceCorrection::class);
     }
 
-    public function proposal_break(): BelongsTo
+    public function proposalBreak(): BelongsTo
     {
         return $this->belongsTo(ProposalBreak::class);
+    }
+
+    public function getBreakInAttribute()
+    {
+        return $this->break_start_at;
+    }
+
+    public function getBreakOutAttribute()
+    {
+        return $this->break_end_at;
     }
 }
