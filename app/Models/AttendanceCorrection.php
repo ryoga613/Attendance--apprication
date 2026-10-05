@@ -23,20 +23,49 @@ class AttendanceCorrection extends Model
     protected $casts = [
         'work_date' => 'date',
         'clock_in_at' => 'datetime',
-        'clock_out_at' => 'datetime', ];
+        'clock_out_at' => 'datetime',
+    ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function attendance(): BelongsTo
+    public function AttendanceRecord(): BelongsTo
     {
-        return $this->belongsTo(Attendance::class);
+        return $this->belongsTo(Attendance::class, 'attendance_id');
     }
 
-    public function proposalBreakCorrections(): HasMany
+    public function proposalBreaks(): HasMany
     {
         return $this->hasMany(ProposalBreakCorrection::class);
+    }
+
+    public function getNewDateAttribute()
+    {
+        return $this->clock_in_at->copy()->settings(['toStringFormat' => 'm月 d日']);
+    }
+
+    public function getNewClockInAttribute()
+    {
+        return $this->clock_in_at->copy()->settings(['toStringFormat' => 'H:i']);
+    }
+
+    public function getNewClockOutAttribute()
+    {
+        return $this->clock_out_at->copy()->settings(['toStringFormat' => 'H:i']);
+    }
+
+    public function getTotalBreakTimeAttribute()
+    {
+        $totalBreakSeconds = $this->proposalBreaks->sum(function ($break) {
+            if ($break->break_start_at && $break->break_end_at) {
+                return $break->break_end_at->diffInSeconds($break->break_start_at);
+            }
+
+            return 0;
+        });
+
+        return gmdate('H:i:s', $totalBreakSeconds);
     }
 }

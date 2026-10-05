@@ -17,7 +17,7 @@ class AttendanceCorrectionController extends Controller
         $user = Auth::user();
         $attendance = Attendance::findOrFail($id);
         $date = Carbon::parse($attendance->work_date)->toDateString();
-        $breaks = $attendance->proposalBreaks->sortBy('break_start_at')->values();
+        $breaks = $attendance->breaks->sortBy('break_start_at')->values();
 
         $originalBreaks = $breaks
             ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
@@ -42,7 +42,6 @@ class AttendanceCorrectionController extends Controller
                 ->with('error', '変更がありません');
         }
 
-        // 1. 勤怠の修正申請を、1回だけ作る
         $correction = ([
             'user_id' => $user->id,
             'attendance_id' => $attendance->id,
@@ -74,5 +73,15 @@ class AttendanceCorrectionController extends Controller
         }
 
         return redirect()->route('attendance.list')->with('success', '勤怠の修正を申請しました');
+    }
+
+    public function stampCorrectionRequestList()
+    {
+
+        $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
+            ->latest()
+            ->get();
+
+        return view('admin.admin-application-list', compact('applications'));
     }
 }

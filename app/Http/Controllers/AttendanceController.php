@@ -22,7 +22,7 @@ class AttendanceController extends Controller
         $previousMonth = $date->copy()->subMonth()->format('Y-m');
         $nextMonth = $date->copy()->addMonth()->format('Y-m');
 
-        $attendanceRecords = Attendance::with('proposalBreaks')
+        $attendanceRecords = Attendance::with('breaks')
             ->where('user_id', $user->id)
             ->whereYear('work_date', $date->year)
             ->whereMonth('work_date', $date->month)
@@ -34,7 +34,7 @@ class AttendanceController extends Controller
             $clockOut = $attendance->clock_out_at ? Carbon::parse($attendance->clock_out_at) : null;
 
             $breakSeconds = 0;
-            foreach ($attendance->proposalBreaks as $break) {
+            foreach ($attendance->breaks as $break) {
                 if ($break->break_start_at && $break->break_end_at) {
                     $breakSeconds += Carbon::parse($break->break_end_at)
                         ->diffInSeconds(Carbon::parse($break->break_start_at));
@@ -75,48 +75,35 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        // 自分の勤怠だけ取得
-        $attendance = Attendance::with('proposalBreaks')
+        if ($user->is_admin) {
+            return app(AdminController::class)->detail($id);
+        }
+
+        $data = Attendance::with('breaks')
             ->where('user_id', $user->id)
             ->findOrFail($id);
 
-        $breakMinutes = $attendance->proposalBreaks
-            ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
-            ->sum(fn ($b) => Carbon::parse($b->break_start_at)
-                ->diffInMinutes(Carbon::parse($b->break_end_at)));
+        $breaks = $data->breaks->map(function ($break) {
+            return [
+                'id' => $break->id,
+                'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+                'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+            ];
+        });
 
-        $breakTime = sprintf('%d:%02d', intdiv($breakMinutes, 60), $breakMinutes % 60);
-
-        $application = $attendance->attendanceCorrections()->with('proposalBreakCorrections')
-            ->where('approval_status', '承認待ち')
-            ->latest()
-            ->first();
-
-        $breaks = collect($application->proposalBreakCorrections ?? [])->map(fn ($b) => [
-            'break_in' => optional($b->break_start_at)->format('H:i'),
-            'break_out' => optional($b->break_end_at)->format('H:i'),
-        ])->values()->all();
-
-        if (empty($breaks)) {
-            $breaks = $attendance->proposalBreaks->map(fn ($b) => [
-                'break_in' => optional($b->break_start_at)->format('H:i'),
-                'break_out' => optional($b->break_end_at)->format('H:i'),
-            ])->values()->all();
-        }
+        $application = $data->attendanceCorrections()->first();
 
         $data = [
-            'application' => $application,
-
-            'id' => $attendance->id,
-            'year' => Carbon::parse($attendance->clock_in_at)->format('Y年'),
-            'date' => Carbon::parse($attendance->clock_in_at)->format('n月j日'),
-            'clock_in' => optional($attendance->clock_in_at)->format('H:i'),
-            'clock_out' => optional($attendance->clock_out_at)->format('H:i'),
-            'breaks' => $breaks,
-            'break_time' => $breakTime,
-            'comment' => $application?->comment,
+            'id'=>$data->id,
+            'date'=>$data->work_date->format('m 月  d 日'),
+            'year'=>$data->work_date?->format('Y 年'),
+            'clock_in'=>$data->clock_in_at?->format('H:i'),
+            'clock_out'=>$data->clock_out_at?->format('H:i'),
+            // 'break_time'=>$data->break_time,
+            'breaks'=>$breaks,
+            'comment'=>$data->comment,
+            'application'=>$application,
         ];
-
         return view('user.user-detail', compact('user', 'data'));
     }
 
