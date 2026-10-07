@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\UserControllers;
 
+use App\http\Controllers\AdminControllers\AdminAttendanceController;
+use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\ProposalBreak;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class AttendanceController extends Controller
+class UserAttendanceController extends Controller
 {
-    //
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -76,7 +77,7 @@ class AttendanceController extends Controller
         $user = Auth::user();
 
         if ($user->is_admin) {
-            return app(AdminController::class)->detail($id);
+            return app(AdminAttendanceController::class)->detail($id);
         }
 
         $data = Attendance::with('breaks')
@@ -94,16 +95,17 @@ class AttendanceController extends Controller
         $application = $data->attendanceCorrections()->first();
 
         $data = [
-            'id'=>$data->id,
-            'date'=>$data->work_date->format('m 月  d 日'),
-            'year'=>$data->work_date?->format('Y 年'),
-            'clock_in'=>$data->clock_in_at?->format('H:i'),
-            'clock_out'=>$data->clock_out_at?->format('H:i'),
+            'id' => $data->id,
+            'date' => $data->work_date->format('m 月  d 日'),
+            'year' => $data->work_date?->format('Y 年'),
+            'clock_in' => $data->clock_in_at?->format('H:i'),
+            'clock_out' => $data->clock_out_at?->format('H:i'),
             // 'break_time'=>$data->break_time,
-            'breaks'=>$breaks,
-            'comment'=>$data->comment,
-            'application'=>$application,
+            'breaks' => $breaks,
+            'comment' => $data->comment,
+            'application' => $application,
         ];
+
         return view('user.user-detail', compact('user', 'data'));
     }
 
