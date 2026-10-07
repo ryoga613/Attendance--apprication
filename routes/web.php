@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\AdminControllers\AdminAttendanceController;
-use App\Http\Controllers\UserControllers\UserAttendanceCorrectionController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\UserControllers\AttendanceReportController;
 use App\Http\Controllers\UserControllers\UserAttendanceController;
+use App\Http\Controllers\UserControllers\UserAttendanceCorrectionController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 
@@ -17,7 +18,6 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
 
 // 管理者ルート
 Route::prefix('admin')->group(function () {
@@ -37,10 +37,12 @@ Route::prefix('admin')->group(function () {
 
 // 一般ユーザーミドルウェア
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+
     Route::get('/attendance', [UserAttendanceController::class, 'attendanceRegisterForm'])->name('attendance.register.form');
     Route::post('/attendance', [UserAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/list', [UserAttendanceController::class, 'index'])->name('attendance.list');
+    Route::get('/attendance/report', [AttendanceReportController::class, 'index'])->name('attendance.report');
+
     Route::get('/attendance/detail/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
 
     Route::get('/attendance/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
@@ -51,9 +53,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/attendance/{id}', [AdminAttendanceController::class, 'detail'])->name('admin.attendance.show');
     Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [UserAttendanceCorrectionController::class, 'approveStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
     Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [UserAttendanceCorrectionController::class, 'updateStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
-
 });
 
-            // Route::post('/logout', LogoutController::class)->name('logout');
-
-
+// Route::post('/logout', LogoutController::class)->name('logout');
