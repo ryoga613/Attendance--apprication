@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\AdminControllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\AttendanceCorrection;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Models\AttendanceCorrection;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
-class AdminController extends Controller
+class AdminAttendanceController extends Controller 
 {
     public function index()
     {
@@ -26,9 +27,6 @@ class AdminController extends Controller
         return view('admin.admin-attendance-list', compact('attendanceRecords', 'date', 'previousDay', 'nextDay', 'users'));
     }
 
-
-
-    
     public function detail($id)
     {
         $attendanceRecord = Attendance::with('breaks')->findOrFail($id);
@@ -37,12 +35,13 @@ class AdminController extends Controller
         return view('admin.admin-detail', compact('attendanceRecord', 'user'));
     }
 
-    public function staffList()
+     public function staffList()
     {
         $users = User::all();
 
         return view('admin.staff-list', compact('users'));
     }
+
 
     public function staffAttendance($id)
     {
@@ -76,6 +75,7 @@ class AdminController extends Controller
 
         return view('admin.admin-application-detail', compact('application', 'user'));
     }
+
 
     public function updateStampCorrectionRequest($id)
     {

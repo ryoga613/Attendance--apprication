@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\UserControllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
@@ -9,7 +10,7 @@ use App\Models\ProposalBreakCorrection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
-class AttendanceCorrectionController extends Controller
+class UserAttendanceCorrectionController extends Controller
 {
     public function store(AttendanceCorrectionRequest $request, $id)
     {
@@ -77,11 +78,12 @@ class AttendanceCorrectionController extends Controller
 
     public function stampCorrectionRequestList()
     {
-
+        $user = Auth::user();
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
+            ->where('user_id', $user->id)
             ->latest()
             ->get();
 
-        return view('admin.admin-application-list', compact('applications'));
+        return view('user.user-application-list', compact('applications'));
     }
 }
