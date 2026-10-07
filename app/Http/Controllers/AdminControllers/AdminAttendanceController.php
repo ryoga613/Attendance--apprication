@@ -4,12 +4,12 @@ namespace App\Http\Controllers\AdminControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\User;
 use App\Models\AttendanceCorrection;
-use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
-class AdminAttendanceController extends Controller 
+class AdminAttendanceController extends Controller
 {
     public function index()
     {
@@ -35,13 +35,12 @@ class AdminAttendanceController extends Controller
         return view('admin.admin-detail', compact('attendanceRecord', 'user'));
     }
 
-     public function staffList()
+    public function staffList()
     {
         $users = User::all();
 
         return view('admin.staff-list', compact('users'));
     }
-
 
     public function staffAttendance($id)
     {
@@ -75,7 +74,6 @@ class AdminAttendanceController extends Controller
 
         return view('admin.admin-application-detail', compact('application', 'user'));
     }
-
 
     public function updateStampCorrectionRequest($id)
     {
