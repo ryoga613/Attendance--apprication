@@ -48,7 +48,7 @@ class UserAttendanceController extends Controller
 
             return [
                 'id' => $attendance->id,
-                'date' => Carbon::parse($attendance->work_date)->locale('ja')->isoFormat('MM/DD(ddd)'),
+                'date' => Carbon::parse($attendance->work_date)->locale('ja')->format('Y 年 m 月 d 日'),
                 'clock_in' => $clockIn ? $clockIn->format('H:i') : '',
                 'clock_out' => $clockOut ? $clockOut->format('H:i') : '',
                 'total_break_time' => $breakSeconds > 0 ? gmdate('H:i:s', $breakSeconds) : null,
@@ -96,7 +96,7 @@ class UserAttendanceController extends Controller
 
         $data = [
             'id' => $data->id,
-            'date' => $data->work_date->format('m 月  d 日'),
+            'date' => $data->work_date->locale('ja')->translatedFormat('n/j(D)'),
             'year' => $data->work_date?->format('Y 年'),
             'clock_in' => $data->clock_in_at?->format('H:i'),
             'clock_out' => $data->clock_out_at?->format('H:i'),
