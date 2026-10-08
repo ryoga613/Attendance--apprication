@@ -76,7 +76,7 @@ class UserAttendanceCorrectionController extends Controller
         return redirect()->route('attendance.list')->with('success', '勤怠の修正を申請しました');
     }
 
-    public function stampCorrectionRequestList()
+    public function index()
     {
         $user = Auth::user();
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
@@ -84,6 +84,17 @@ class UserAttendanceCorrectionController extends Controller
             ->latest()
             ->get();
 
-        return view('user.user-application-list', compact('applications'));
+        $formattedApplications = $applications->map(function ($application) {
+            return [
+                'id' => $application->id,
+                'approval_status' => $application->approval_status,
+                'date' => $application->AttendanceRecord?->work_date,
+                'clock_in_at' => $application->clock_in_at?->format('H:i'),
+                'clock_out_at' => $application->clock_out_at?->format('H:i'),
+                'comment' => $application->comment,
+                'application_date' => $application->created_at,
+            ];
+        });
+        return view('user.user-application-list', compact('formattedApplications', 'user'));
     }
 }
