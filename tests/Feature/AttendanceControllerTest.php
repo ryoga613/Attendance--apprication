@@ -90,12 +90,12 @@ class AttendanceControllerTest extends TestCase
             'name' => 'テストユーザー',
             'email' => 'test@example.com',
             'password' => bcrypt('password123'),
-            'attendance_status' => '退勤後',
+            'attendance_status' => '退勤済',
         ]);
         $user->markEmailAsVerified();
         $response = $this->actingAs($user)->get('/attendance');
         $response->assertStatus(200);
-        $response->assertSee('退勤後');
+        $response->assertSee('退勤済');
 
     }
 
@@ -252,6 +252,6 @@ class AttendanceControllerTest extends TestCase
         $this->assertDatabaseHas('attendances', [
             'user_id' => $user->id,
         ]);
-        $this->assertSame('退勤後', $user->fresh()->attendance_status);
+        $this->assertSame('退勤済', $user->fresh()->attendance_status);
     }
 }

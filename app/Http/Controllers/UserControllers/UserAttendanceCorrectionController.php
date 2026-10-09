@@ -95,6 +95,7 @@ class UserAttendanceCorrectionController extends Controller
                 'application_date' => $application->created_at,
             ];
         });
+
         return view('user.user-application-list', compact('formattedApplications', 'user'));
     }
 }

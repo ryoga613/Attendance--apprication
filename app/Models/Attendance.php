@@ -9,12 +9,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attendance extends Model
 {
+    protected $fillable = [
+        'user_id',
+        'work_date',
+        'clock_in_at',
+        'clock_out_at',
+    ];
+
     use HasFactory;
 
     // ---- 定数(所定の勤務条件はここだけで管理) ----
-    public const STANDARD_START_HOUR = 9;       // 始業 9:00
+    public const STANDARD_START_HOUR = 9;
 
-    public const STANDARD_END_HOUR = 18;      // 終業 18:00
+    public const STANDARD_END_HOUR = 18;
 
     public const STANDARD_DAILY_SECONDS = 8 * 3600; // 所定労働時間 8時間
 

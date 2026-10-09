@@ -68,6 +68,4 @@ class AttendanceCorrection extends Model
 
         return gmdate('H:i:s', $totalBreakSeconds);
     }
-
-   
 }

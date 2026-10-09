@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
@@ -20,6 +21,7 @@ class AttendanceSeeder extends Seeder
             $this->seedPastMonths($user);
             $this->seedCurrentMonthPattern($user);
         }
+
     }
 
     private function seedPastMonths(User $user): void
@@ -79,6 +81,12 @@ class AttendanceSeeder extends Seeder
                         'clock_in_at' => $date->copy()->setTimeFromTimeString($clockIn),
                         'clock_out_at' => $date->copy()->setTimeFromTimeString($clockOut),
                     ]);
+
+                    if (Carbon::parse($attendance->work_date)->isToday()) {
+                        $user->update([
+                            'attendance_status' => AttendanceStatus::CLOCKED_OUT,
+                        ]);
+                    }
 
                     $createdCount++;
                     $date->addDay();
