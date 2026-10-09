@@ -21,21 +21,20 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 */
 
 // 管理者ルート
-
-Route::get('admin/login', function () {
-    return view('admin.admin-login');
-})->name('admin.login');
+Route::get('admin/login', function () {return view('admin.admin-login');})->name('admin.login');
 Route::post('admin/login', [AuthenticatedSessionController::class, 'store']);
 
-Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminAttendanceCorrectionController::class, 'updateStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
+// 管理者ミドルウェア
+Route::middleware(['auth', 'admin'])->group(function () {
 
-Route::prefix('admin')->group(function () {
-    // 管理者ミドルウェア
-    Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminAttendanceCorrectionController::class, 'updateStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
+
+    Route::prefix('admin')->group(function () {
         Route::get('/attendance/list', [AdminAttendanceController::class, 'index'])->name('admin.attendance.list');
         Route::get('/staff/list', [AdminAttendanceController::class, 'staffList'])->name('admin.staff.list');
         Route::get('/attendance/{id}', [AdminAttendanceController::class, 'detail'])->name('admin.attendance.show');
         Route::get('/attendance/staff/{id}', [AdminAttendanceController::class, 'staffAttendance'])->name('admin.attendance.staff');
+        Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
     });
 
 });
@@ -47,9 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance', [UserAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/list', [UserAttendanceController::class, 'index'])->name('attendance.list');
     Route::get('/attendance/report', [AttendanceReportController::class, 'index'])->name('attendance.report');
-
     Route::get('/attendance/detail/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
-
     Route::post('/attendance/{id}', [UserAttendanceCorrectionController::class, 'store'])->name('attendanceCorrection.store');
     Route::post('/logout', [LogoutController::class, 'logout'])->name('user.logout');
     Route::get('/stamp_correction_request/list', [UserAttendanceCorrectionController::class, 'index'])->name('attendance.correction.index');
@@ -57,5 +54,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [UserAttendanceCorrectionController::class, 'approveStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
 });
 
-// Route::post('/logout', LogoutController::class)->name('logout');
-Route::get('/attendance/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');

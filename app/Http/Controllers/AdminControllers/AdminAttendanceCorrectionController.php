@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\AdminControllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\AttendanceCorrection;
 use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use Illuminate\Support\Facades\Auth;
 
 class AdminAttendanceCorrectionController extends Controller

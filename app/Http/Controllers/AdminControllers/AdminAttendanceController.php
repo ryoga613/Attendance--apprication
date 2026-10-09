@@ -4,7 +4,6 @@ namespace App\Http\Controllers\AdminControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\AttendanceCorrection;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -65,6 +64,4 @@ class AdminAttendanceController extends Controller
 
         return view('admin.staff-attendance-list', compact('user', 'attendanceRecords', 'date', 'formattedAttendanceRecords', 'previousMonth', 'nextMonth'));
     }
-
-    
 }
