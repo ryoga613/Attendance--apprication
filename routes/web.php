@@ -20,21 +20,22 @@ use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 */
 
 // 管理者ルート
-Route::prefix('admin')->group(function () {
-    Route::get('/login', function () {
-        return view('admin.admin-login');
-    })->name('admin.login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
+    Route::get('admin/login', function () {return view('admin.admin-login');})->name('admin.login');
+    Route::post('admin/login', [AuthenticatedSessionController::class, 'store']);
+
+    
+Route::prefix('admin')->group(function () {
     // 管理者ミドルウェア
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/attendance/list', [AdminAttendanceController::class, 'index'])->name('admin.attendance.list');
         Route::get('/staff/list', [AdminAttendanceController::class, 'staffList'])->name('admin.staff.list');
-        Route::get('/admin/attendance/{id}', [AdminAttendanceController::class, 'detail'])->name('admin.attendance.show');
+        Route::get('/attendance/{id}', [AdminAttendanceController::class, 'detail'])->name('admin.attendance.show');
         Route::get('/attendance/staff/{id}', [AdminAttendanceController::class, 'staffAttendance'])->name('admin.attendance.staff');
     });
 
 });
+
 
 // 一般ユーザーミドルウェア
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -46,7 +47,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/attendance/detail/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
 
-    Route::get('/attendance/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
 
     Route::post('/attendance/{id}', [UserAttendanceCorrectionController::class, 'store'])->name('attendanceCorrection.store');
     Route::post('/logout', [LogoutController::class, 'logout'])->name('user.logout');
@@ -57,3 +57,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Route::post('/logout', LogoutController::class)->name('logout');
+Route::get('/attendance/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');

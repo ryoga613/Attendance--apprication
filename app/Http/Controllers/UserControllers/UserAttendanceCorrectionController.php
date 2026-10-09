@@ -12,6 +12,42 @@ use Illuminate\Support\Facades\Auth;
 
 class UserAttendanceCorrectionController extends Controller
 {
+
+    public function index()
+    {
+        $user = Auth::user();
+        $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        if (auth()->user()->admin_status === 1) {
+            $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
+                ->latest()
+                ->get();
+        }
+
+        $formattedApplications = $applications->map(function ($application) {
+            return [
+                'id' => $application->id,
+                'date' => $application->AttendanceRecord->work_date,
+                'application_date' => $application->created_at,
+                'clock_in_at' => $application->clock_in_at,
+                'clock_out_at' => $application->clock_out_at,
+                'approval_status' => $application->approval_status,
+                'comment' => $application->comment,
+            ];
+        });
+
+        $user = Auth::user();
+
+        if (auth()->user()->admin_status === 1) {
+
+            return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
+        }
+
+        return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
+    }
     public function store(AttendanceCorrectionRequest $request, $id)
     {
 
@@ -76,7 +112,7 @@ class UserAttendanceCorrectionController extends Controller
         return redirect()->route('attendance.list')->with('success', '勤怠の修正を申請しました');
     }
 
-    public function index()
+    public function stampCorrectionRequestList()
     {
         $user = Auth::user();
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
@@ -84,18 +120,6 @@ class UserAttendanceCorrectionController extends Controller
             ->latest()
             ->get();
 
-        $formattedApplications = $applications->map(function ($application) {
-            return [
-                'id' => $application->id,
-                'approval_status' => $application->approval_status,
-                'date' => $application->AttendanceRecord?->work_date,
-                'clock_in_at' => $application->clock_in_at?->format('H:i'),
-                'clock_out_at' => $application->clock_out_at?->format('H:i'),
-                'comment' => $application->comment,
-                'application_date' => $application->created_at,
-            ];
-        });
-
-        return view('user.user-application-list', compact('formattedApplications', 'user'));
+        return view('user.user-application-list', compact('applications'));
     }
 }

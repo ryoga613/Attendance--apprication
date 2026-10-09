@@ -9,6 +9,7 @@ use App\Models\ProposalBreak;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AttendanceCorrection;
 
 class UserAttendanceController extends Controller
 {
@@ -76,7 +77,7 @@ class UserAttendanceController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->is_admin) {
+        if ($user->admin_status) {
             return app(AdminAttendanceController::class)->detail($id);
         }
 
@@ -104,6 +105,10 @@ class UserAttendanceController extends Controller
             'comment' => $data->comment,
             'application' => $application,
         ];
+
+        if(auth()->user()->admin_status === 1) {
+            return view('admin.admin-detail', compact('user', 'data'));
+        }
 
         return view('user.user-detail', compact('user', 'data'));
     }
@@ -192,5 +197,13 @@ class UserAttendanceController extends Controller
         ]);
 
         return redirect()->route('attendance.register.form');
+    }
+
+    public function approveStampCorrectionRequest($id)
+    {
+        $user = Auth::user();
+        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+
+        return view('admin.admin-application-detail', compact('application', 'user'));
     }
 }
