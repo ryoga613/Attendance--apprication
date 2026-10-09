@@ -100,7 +100,6 @@ class UserAttendanceController extends Controller
             'year' => $data->work_date?->format('Y 年'),
             'clock_in' => $data->clock_in_at?->format('H:i'),
             'clock_out' => $data->clock_out_at?->format('H:i'),
-            // 'break_time'=>$data->break_time,
             'breaks' => $breaks,
             'comment' => $data->comment,
             'application' => $application,
@@ -125,6 +124,9 @@ class UserAttendanceController extends Controller
 
     private function clockIn($user)
     {
+        if ($user->attendance_status() !== '勤務外') {
+            return redirect()->route('attendance.register.form');
+        }
         Attendance::create([
             'user_id' => $user->id,
             'work_date' => now()->toDateString(),
@@ -148,7 +150,7 @@ class UserAttendanceController extends Controller
         ]);
 
         $user->update([
-            'attendance_status' => '退勤後',
+            'attendance_status' => '退勤済',
         ]);
 
         return redirect()->route('attendance.register.form');

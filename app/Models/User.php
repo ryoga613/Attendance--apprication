@@ -55,7 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'off_duty', AttendanceStatus::OFF_DUTY->value, AttendanceStatus::OFF_DUTY => '勤務外',
             'on_duty', AttendanceStatus::ON_DUTY->value, AttendanceStatus::ON_DUTY => '出勤中',
             'on_break', AttendanceStatus::ON_BREAK->value, AttendanceStatus::ON_BREAK => '休憩中',
-            'clocked_out', AttendanceStatus::CLOCKED_OUT->value, AttendanceStatus::CLOCKED_OUT => '退勤後',
+            'clocked_out', AttendanceStatus::CLOCKED_OUT->value, AttendanceStatus::CLOCKED_OUT => '退勤済',
             default => $value ?? '勤務外', // 未設定時の初期値
         };
     }
@@ -72,6 +72,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function attendance_status(): AttendanceStatus
     {
-        return $this->attendance_status;
+        $Status = $this->getRawOriginal('attendance_status');
+
+        if ($Status instanceof AttendanceStatus) {
+            return $Status;
+        }
+
+        return AttendanceStatus::tryFrom($Status) ?? AttendanceStatus::OFF_DUTY;
     }
 }
