@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserControllers;
 
+use App\Http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AttendanceCorrectionRequest;
@@ -151,5 +152,39 @@ class UserAttendanceCorrectionController extends Controller
         }
 
         return view('user.user-detail', compact('data', 'user'));
+    }
+
+    public function detail($id)
+    {
+        $user = Auth::user();
+
+        if ($user->admin_status) {
+            return app(AdminAttendanceController::class)->detail($id);
+        }
+
+        $attendance = Attendance::with('breaks')->FindOrFail($id);
+
+        $application = $attendance->AttendanceCorrections->first();
+
+        $breaks = $attendance->breaks->map(function ($break) {
+            return [
+                'id' => $break->id,
+                'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+                'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+            ];
+        });
+
+        $data = ([
+            'application' => $application,
+            'id'=> $attendance->id,
+            'year'=> $attendance->clock_in_at->format('Y 年'),
+            'date' =>$attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+            'clock_in' => $attendance->clock_in_at->format('H:i'),
+            'clock_out' => $attendance->clock_out_at->format('H:i'),
+            'breaks'=> $breaks,
+            'comment'=> $application->comment,
+        ]);
+
+        return view('user.user-detail', compact('user', 'data'));
     }
 }

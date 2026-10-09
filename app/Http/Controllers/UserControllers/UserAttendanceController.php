@@ -75,42 +75,30 @@ class UserAttendanceController extends Controller
 
     public function detail($id)
     {
-        $user = Auth::user();
+        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+        $attendance = $application->AttendanceRecord;
 
-        if ($user->admin_status) {
-            return app(AdminAttendanceController::class)->detail($id);
-        }
-
-        $data = Attendance::with('breaks')
-            ->where('user_id', $user->id)
-            ->findOrFail($id);
-
-        $breaks = $data->breaks->map(function ($break) {
+        $breaks = $attendance->breaks->map(function ($break) {
             return [
                 'id' => $break->id,
                 'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
                 'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
             ];
         });
+        $data = ([
+            'application'=> $application,
+            'id' => $attendance->id,
+            'date' => $attendance->work_date->locale('ja')->translatedFormat('n/j(D)'),
+            'year' => $attendance->work_date->format('Y 年'),
+            'clock_in' => $attendance->clock_in_at->format('H:i'),
+            'clock_out' => $attendance->clock_out_at->format('H:i'),
+            'breaks'=> $breaks,
+            'comment'=> $application->comment,
 
-        $application = $data->attendanceCorrections()->first();
+            ]);
 
-        $data = [
-            'id' => $data->id,
-            'date' => $data->work_date->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $data->work_date?->format('Y 年'),
-            'clock_in' => $data->clock_in_at?->format('H:i'),
-            'clock_out' => $data->clock_out_at?->format('H:i'),
-            'breaks' => $breaks,
-            'comment' => $data->comment,
-            'application' => $application,
-        ];
-
-        if (auth()->user()->admin_status === 1) {
-            return view('admin.admin-detail', compact('user', 'data'));
-        }
-
-        return view('user.user-detail', compact('user', 'data'));
+        $user = Auth::user();
+        return view('user.user-detail',compact('data','user'));
     }
 
     public function store(Request $request)
