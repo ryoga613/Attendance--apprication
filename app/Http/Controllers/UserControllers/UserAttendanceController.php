@@ -5,11 +5,11 @@ namespace App\Http\Controllers\UserControllers;
 use App\http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreak;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\AttendanceCorrection;
 
 class UserAttendanceController extends Controller
 {
@@ -106,7 +106,7 @@ class UserAttendanceController extends Controller
             'application' => $application,
         ];
 
-        if(auth()->user()->admin_status === 1) {
+        if (auth()->user()->admin_status === 1) {
             return view('admin.admin-detail', compact('user', 'data'));
         }
 
