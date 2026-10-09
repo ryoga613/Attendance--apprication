@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserControllers;
 
+use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\Attendance;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 
 class UserAttendanceCorrectionController extends Controller
 {
-
     public function index()
     {
         $user = Auth::user();
@@ -42,12 +42,12 @@ class UserAttendanceCorrectionController extends Controller
         $user = Auth::user();
 
         if (auth()->user()->admin_status === 1) {
-
             return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
         }
 
         return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
     }
+
     public function store(AttendanceCorrectionRequest $request, $id)
     {
 
@@ -121,5 +121,35 @@ class UserAttendanceCorrectionController extends Controller
             ->get();
 
         return view('user.user-application-list', compact('applications'));
+    }
+
+    public function approveStampCorrectionRequest($id)
+    {
+        $user = Auth::user();
+        $data = Attendance::with('breaks')->findOrFail($id);
+        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+        $breaks = $data->breaks->map(function ($break) {
+            return [
+                'break_in' => $break->break_start_at->format('H:i'),
+                'break_out' => $break->break_end_at->format('H:i'),
+            ];
+        });
+        $data = ([
+
+            'breaks' => $breaks,
+            'id' => $data->id,
+            'date' => $data->work_date->locale('ja')->translatedFormat('n/j(D)'),
+            'year' => $data->work_date?->format('Y 年'),
+            'clock_in' => $data->clock_in_at->format('H:i'),
+            'clock_out' => $data->clock_out_at->format('H:i'),
+            'comment' => $data->comment,
+            'application' => $application,
+        ]);
+
+        if ($user->admin_status === 1) {
+            return app(AdminAttendanceCorrectionController::class)->approveStampCorrectionRequest($id);
+        }
+
+        return view('user.user-detail', compact('data', 'user'));
     }
 }
