@@ -16,17 +16,15 @@ class UserAttendanceCorrectionController extends Controller
 {
     public function index()
     {
+        if (Auth::guard('admin')->check()) {
+            return app(AdminAttendanceCorrectionController::class)->index();
+        }
+
         $user = Auth::user();
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
             ->where('user_id', $user->id)
             ->latest()
             ->get();
-
-        if (auth()->user()->admin_status === 1) {
-            $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
-                ->latest()
-                ->get();
-        }
 
         $formattedApplications = $applications->map(function ($application) {
             return [
@@ -39,13 +37,6 @@ class UserAttendanceCorrectionController extends Controller
                 'comment' => $application->comment,
             ];
         });
-
-        $user = Auth::user();
-
-        if (auth()->user()->admin_status === 1) {
-            return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
-        }
-
         return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
     }
 
@@ -113,19 +104,9 @@ class UserAttendanceCorrectionController extends Controller
         return redirect()->route('attendance.list')->with('success', '勤怠の修正を申請しました');
     }
 
-    public function stampCorrectionRequestList()
-    {
-        $user = Auth::user();
-        $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
-            ->where('user_id', $user->id)
-            ->latest()
-            ->get();
-
-        return view('user.user-application-list', compact('applications'));
-    }
-
     public function approveStampCorrectionRequest($id)
     {
+        
         $user = Auth::user();
         $data = Attendance::with('breaks')->findOrFail($id);
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
@@ -147,10 +128,6 @@ class UserAttendanceCorrectionController extends Controller
             'application' => $application,
         ]);
 
-        if ($user->admin_status === 1) {
-            return app(AdminAttendanceCorrectionController::class)->approveStampCorrectionRequest($id);
-        }
-
         return view('user.user-detail', compact('data', 'user'));
     }
 
@@ -158,13 +135,17 @@ class UserAttendanceCorrectionController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->admin_status) {
+        if (Auth::guard('admin')->check()) {
             return app(AdminAttendanceController::class)->detail($id);
         }
 
         $attendance = Attendance::with('breaks')->FindOrFail($id);
 
-        $application = $attendance->AttendanceCorrections->first();
+        $application = $attendance->attendanceCorrections()
+            ->with('proposalBreaks')
+            ->where('approval_status', '!=', '承認済み')
+            ->latest()
+            ->first();
 
         $breaks = $attendance->breaks->map(function ($break) {
             return [
@@ -176,13 +157,13 @@ class UserAttendanceCorrectionController extends Controller
 
         $data = ([
             'application' => $application,
-            'id'=> $attendance->id,
-            'year'=> $attendance->clock_in_at->format('Y 年'),
-            'date' =>$attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+            'id' => $attendance->id,
+            'year' => $attendance->clock_in_at->format('Y 年'),
+            'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
             'clock_in' => $attendance->clock_in_at->format('H:i'),
             'clock_out' => $attendance->clock_out_at->format('H:i'),
-            'breaks'=> $breaks,
-            'comment'=> $application->comment,
+            'breaks' => $breaks,
+            'comment' => $application?->comment,
         ]);
 
         return view('user.user-detail', compact('user', 'data'));
