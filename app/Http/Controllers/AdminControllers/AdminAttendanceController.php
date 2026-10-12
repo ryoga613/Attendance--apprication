@@ -4,13 +4,16 @@ namespace App\Http\Controllers\AdminControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class AdminAttendanceController extends Controller
 {
     public function index()
     {
+
         $date = Carbon::parse(request()->get('date', now()->toDateString()));
 
         $previousDay = $date->copy()->subDay();
@@ -27,10 +30,26 @@ class AdminAttendanceController extends Controller
 
     public function detail($id)
     {
-        $attendanceRecord = Attendance::with('breaks')->findOrFail($id);
-        $user = $attendanceRecord->user;
+        $attendance = Attendance::with('breaks')->findOrFail($id);
 
-        return view('admin.admin-detail', compact('attendanceRecord', 'user'));
+        $application = AttendanceCorrection::where('attendance_id', $id)->first();
+
+        $attendanceRecord = [
+            'application' => $application,
+            'id' => $attendance->id,
+            'year' => $attendance->year,
+            'date' => (string) $attendance->date->locale('ja')->translatedFormat('n/j(D)'),
+            'clock_in' => $attendance->clock_in_at->format('H:i'),
+            'clock_out' => $attendance->clock_out_at->format('H:i'),
+            'breaks' => $attendance->breaks->map(fn ($b) => [
+                'break_in' => $b->break_start_at?->format('H:i'),
+                'break_out' => $b->break_end_at?->format('H:i'),
+            ])->values()->all(),
+            'comment' => $attendance->comment,
+        ];
+        $user = Auth::user();
+
+        return view('admin.admin-detail', compact('user', 'attendanceRecord'));
     }
 
     public function staffList()

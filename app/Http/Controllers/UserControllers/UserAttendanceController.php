@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\UserControllers;
 
-use App\http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
@@ -67,7 +66,7 @@ class UserAttendanceController extends Controller
             ->first();
 
         $user = auth()->user();
-        $formattedDate = Carbon::now();
+        $formattedDate = Carbon::now()->locale('ja')->translatedFormat('Y 年 n月 j日（D）');
         $formattedTime = Carbon::now();
 
         return view('user.attendance-register', compact('todayAttendance', 'user', 'formattedDate', 'formattedTime'));
@@ -78,6 +77,9 @@ class UserAttendanceController extends Controller
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
         $attendance = $application->AttendanceRecord;
 
+        if ($application->approval_status === '承認済み') {
+            $application = null;
+        }
         $breaks = $attendance->breaks->map(function ($break) {
             return [
                 'id' => $break->id,
@@ -85,20 +87,22 @@ class UserAttendanceController extends Controller
                 'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
             ];
         });
-        $data = ([
-            'application'=> $application,
-            'id' => $attendance->id,
-            'date' => $attendance->work_date->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $attendance->work_date->format('Y 年'),
-            'clock_in' => $attendance->clock_in_at->format('H:i'),
-            'clock_out' => $attendance->clock_out_at->format('H:i'),
-            'breaks'=> $breaks,
-            'comment'=> $application->comment,
 
-            ]);
+        $data = ([
+            'application' => $application,
+            'id' => $attendance->id,
+            'date' => $attendance->work_date?->locale('ja')->translatedFormat('n/j(D)'),
+            'year' => $attendance->work_date?->format('Y 年'),
+            'clock_in' => $attendance->clock_in_at?->format('H:i'),
+            'clock_out' => $attendance->clock_out_at?->format('H:i'),
+            'breaks' => $breaks,
+            'comment' => $application?->comment,
+
+        ]);
 
         $user = Auth::user();
-        return view('user.user-detail',compact('data','user'));
+
+        return view('user.user-detail', compact('data', 'user'));
     }
 
     public function store(Request $request)
@@ -117,7 +121,7 @@ class UserAttendanceController extends Controller
 
     private function clockIn($user)
     {
-        if ($user->attendance_status() !== '勤務外') {
+        if ($user->attendance_status()->value !== '勤務外') {
             return redirect()->route('attendance.register.form');
         }
         Attendance::create([

@@ -43,6 +43,11 @@ class Attendance extends Model
         return $this->hasMany(ProposalBreak::class);
     }
 
+    public function proposalBreaks(): HasMany
+    {
+        return $this->hasMany(ProposalBreak::class);  // 修正申請の休憩
+    }
+
     public function attendanceCorrections(): HasMany
     {
         return $this->hasMany(AttendanceCorrection::class);
