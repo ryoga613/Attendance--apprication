@@ -180,6 +180,7 @@ class AdminAttendanceCorrectionController extends Controller
         ]);
 
         $user = Auth::guard('admin')->user() ?? Auth::user();
+
         // dd($application);
         return view('admin.admin-application-detail', compact('application', 'user'));
     }

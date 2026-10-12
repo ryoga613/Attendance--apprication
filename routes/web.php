@@ -2,13 +2,13 @@
 
 use App\Http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
+use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\SharedCorrectionController;
 use App\Http\Controllers\UserControllers\AttendanceReportController;
 use App\Http\Controllers\UserControllers\UserAttendanceController;
 use App\Http\Controllers\UserControllers\UserAttendanceCorrectionController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SharedCorrectionController;
-use App\Http\Controllers\AdminLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,10 +24,8 @@ use App\Http\Controllers\AdminLoginController;
 Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm']);
 Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login');
 
-
 Route::middleware(['auth', 'verified'])->group(function () {
 
-   
     Route::get('/attendance', [UserAttendanceController::class, 'attendanceRegisterForm'])->name('attendance.register.form');
     Route::post('/attendance', [UserAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/list', [UserAttendanceController::class, 'index'])->name('attendance.list');
@@ -40,11 +38,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-    
 // 管理者ミドルウェア
 Route::middleware(['auth:admin'])->group(function () {
-        
-        
+
     // Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminAttendanceCorrectionController::class, 'updateStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');
     Route::prefix('admin')->group(function () {
         Route::get('/attendance/list', [AdminAttendanceController::class, 'index'])->name('admin.attendance.list');
@@ -55,11 +51,9 @@ Route::middleware(['auth:admin'])->group(function () {
         Route::post('/logout', [LogoutController::class, 'adminLogout'])->name('logout');
     });
 
-
 });
-    // Route::get('/stamp_correction_request/list', [UserAttendanceCorrectionController::class, 'index'])->name('attendance.correction.index');
+// Route::get('/stamp_correction_request/list', [UserAttendanceCorrectionController::class, 'index'])->name('attendance.correction.index');
 Route::get('/stamp_correction_request/list', [SharedCorrectionController::class, 'index'])
     ->middleware('auth:web,admin')
     ->name('attendance.correction.index');
-    Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [SharedCorrectionController::class, 'approveStampCorrectionRequest'])->name('stamp_correction_request.approve');
-
+Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [SharedCorrectionController::class, 'approveStampCorrectionRequest'])->name('stamp_correction_request.approve');

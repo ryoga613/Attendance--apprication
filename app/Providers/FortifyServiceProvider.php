@@ -6,7 +6,6 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
-use App\Http\Responses\LogoutResponse;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -17,7 +16,6 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\LoginResponse;
-use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -63,7 +61,12 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();
 
-            if (! $user || ! Hash::check($request->password, $user->password)) {
+            // ユーザーがいない、パスワードが違う、管理者アカウント → 同じエラーにする
+            if (
+                ! $user
+                || ! Hash::check($request->password, $user->password)
+                || $user->admin_status
+            ) {
                 throw ValidationException::withMessages([
                     'email' => 'ログイン情報が登録されていません。',
                 ]);
@@ -81,8 +84,5 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
-
-        // $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
-
     }
 }
