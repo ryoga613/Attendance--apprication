@@ -37,6 +37,7 @@ class UserAttendanceCorrectionController extends Controller
                 'comment' => $application->comment,
             ];
         });
+
         return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
     }
 
@@ -106,7 +107,7 @@ class UserAttendanceCorrectionController extends Controller
 
     public function approveStampCorrectionRequest($id)
     {
-        
+
         $user = Auth::user();
         $data = Attendance::with('breaks')->findOrFail($id);
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
