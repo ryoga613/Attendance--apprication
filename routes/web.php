@@ -30,9 +30,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance', [UserAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/list', [UserAttendanceController::class, 'index'])->name('attendance.list');
     Route::get('/attendance/report', [AttendanceReportController::class, 'index'])->name('attendance.report');
-    Route::get('/attendance/detail/{id}', [UserAttendanceCorrectionController::class, 'detail'])->name('attendance.show');
+    Route::get('/attendance/detail/{id}', [UserAttendanceCorrectionController::class, 'detail'])->name('attendance.detail');
     Route::post('/attendance/{id}', [UserAttendanceCorrectionController::class, 'store'])->name('attendanceCorrection.store');
-    Route::get('/application/{id}', [UserAttendanceController::class, 'detail'])->name('attendance.show');
+    Route::get('/application/{id}', [UserAttendanceController::class, 'detail'])->name('application.show');
 
     Route::post('/logout', [LogoutController::class, 'UserLogout'])->name('user.logout');
 

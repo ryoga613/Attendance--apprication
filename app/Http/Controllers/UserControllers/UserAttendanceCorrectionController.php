@@ -5,7 +5,7 @@ namespace App\Http\Controllers\UserControllers;
 use App\Http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AttendanceCorrectionRequest;
+use App\Http\Requests\StoreAttendanceCorrectionRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
@@ -41,68 +41,77 @@ class UserAttendanceCorrectionController extends Controller
         return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
     }
 
-    public function store(AttendanceCorrectionRequest $request, $id)
+    public function store(StoreAttendanceCorrectionRequest $request, $id)
     {
+        $validated = $request->validated();
 
         $user = Auth::user();
         $attendance = Attendance::findOrFail($id);
         $date = Carbon::parse($attendance->work_date)->toDateString();
+
+        // 休憩データの取得とフォーマット（Carbonキャスト前提）
         $breaks = $attendance->breaks->sortBy('break_start_at')->values();
 
         $originalBreaks = $breaks
             ->filter(fn ($b) => $b->break_start_at && $b->break_end_at)
-            ->map(fn ($b) => $b->break_start_at->format('H:i').'-'.$b->break_end_at->format('H:i'))
+            ->map(fn ($b) => Carbon::parse($b->break_start_at)->format('H:i').'-'.Carbon::parse($b->break_end_at)->format('H:i'))
             ->values()
             ->all();
 
-        $newBreaks = collect($request->new_break_in)
-            ->map(fn ($in, $i) => [$in, $request->new_break_out[$i] ?? null])
-            ->filter(fn ($pair) => $pair[0] && $pair[1])
+        $newBreakIns = $validated['new_break_in'] ?? [];
+        $newBreakOuts = $validated['new_break_out'] ?? [];
+
+        $newBreaks = collect($newBreakIns)
+            ->map(fn ($in, $i) => [$in, $newBreakOuts[$i] ?? null])
+            ->filter(fn ($pair) => ! empty($pair[0]) && ! empty($pair[1]))
             ->map(fn ($pair) => Carbon::parse($pair[0])->format('H:i').'-'.Carbon::parse($pair[1])->format('H:i'))
             ->values()
             ->all();
 
-        $noChange = $attendance->clock_in_at?->format('H:i') === Carbon::parse($request->new_clock_in)->format('H:i')
-            && $attendance->clock_out_at?->format('H:i') === Carbon::parse($request->new_clock_out)->format('H:i')
+        // 変更有無の判定
+        $noChange = $attendance->clock_in_at?->format('H:i') === Carbon::parse($validated['new_clock_in'])->format('H:i')
+            && $attendance->clock_out_at?->format('H:i') === Carbon::parse($validated['new_clock_out'])->format('H:i')
             && $originalBreaks === $newBreaks;
+
+        // dd($noChange);
 
         if ($noChange) {
             return redirect()
-                ->route('attendance.show', $id)
-                ->with('error', '変更がありません');
+                ->back() // または route('attendance.detail', $id)
+                ->withInput() // 入力値を保持
+                ->withErrors(['comment' => '変更がありません']);
         }
 
-        $correction = ([
+        // 4. 不要な丸括弧を削除
+        $correction = AttendanceCorrection::create([
             'user_id' => $user->id,
             'attendance_id' => $attendance->id,
-            'clock_in_at' => $date.' '.$request->new_clock_in,
-            'clock_out_at' => $date.' '.$request->new_clock_out,
+            'clock_in_at' => $date.' '.$validated['new_clock_in'],
+            'clock_out_at' => $date.' '.$validated['new_clock_out'],
             'approval_status' => '承認待ち',
-            'comment' => $request->comment,
+            'comment' => $validated['comment'] ?? null,
         ]);
 
-        $correction = AttendanceCorrection::create($correction);
-
-        foreach ($request->new_break_in as $i => $breakIn) {
-            $breakOut = $request->new_break_out[$i];
+        foreach ($newBreakIns as $i => $breakIn) {
+            $breakOut = $newBreakOuts[$i] ?? null;
 
             if (! $breakIn || ! $breakOut) {
                 continue;
             }
 
-            $breakRequest = ([
+            ProposalBreakCorrection::create([
                 'attendance_correction_id' => $correction->id,
                 'proposal_break_id' => $breaks[$i]->id ?? null,
-                'clock_in_at' => $date.' '.$request->new_clock_in,
-                'clock_out_at' => $date.' '.$request->new_clock_out,
                 'break_start_at' => $date.' '.$breakIn,
                 'break_end_at' => $date.' '.$breakOut,
             ]);
 
-            ProposalBreakCorrection::create($breakRequest);
         }
 
-        return redirect()->route('attendance.list')->with('success', '勤怠の修正を申請しました');
+        // dd($correction);
+
+        return redirect()->route('attendance.detail', $attendance->id)
+            ->with('success', '勤怠の修正を申請しました');
     }
 
     public function approveStampCorrectionRequest($id)
