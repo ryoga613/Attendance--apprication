@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\AdminControllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AttendanceCorrectionRequest;
+use App\Http\Requests\UpdateAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
@@ -93,7 +93,7 @@ class AdminAttendanceCorrectionController extends Controller
     //     return redirect()->route('admin.attendance.list')->with('success', '勤怠の修正を申請しました');
     // }
 
-    public function store(AttendanceCorrectionRequest $request, $id)
+    public function store(UpdateAttendanceRequest $request, $id)
     {
         $attendance = Attendance::with('breaks')->findOrFail($id);
         // $breaks = $attendance->breaks
