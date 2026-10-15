@@ -36,7 +36,7 @@ class CreateNewUser implements CreatesNewUsers
             'name.required' => 'お名前を入力してください。',
             'name.string' => 'お名前を正しく入力してください。',
             'name.max' => 'お名前は255文字以内で入力してください。',
-            
+
             'email.max' => 'メールアドレスは255文字以内で入力してください。',
             'email.required' => 'メールアドレスを入力してください。',
             'email.string' => '正しいメールアドレスの形式で入力してください。',
