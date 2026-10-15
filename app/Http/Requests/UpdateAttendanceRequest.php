@@ -3,147 +3,112 @@
 namespace App\Http\Requests;
 
 use Carbon\Carbon;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateAttendanceRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
+    private const TIME_FORMAT = 'H:i';
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
-    public function rules()
+    public function rules(): array
     {
+        $time = 'date_format:'.self::TIME_FORMAT;
+
         return [
-            'work_date' => ['required', 'date_format:Y-m-d'],
-            'new_clock_in' => ['required', 'date_format:H:i'],
-            'new_clock_out' => ['required', 'date_format:H:i'],
+            'new_clock_in' => ['required', $time],
+            'new_clock_out' => ['required', $time],
             'new_break_in' => ['nullable', 'array'],
-            'new_break_in.*' => ['nullable', 'date_format:H:i', 'required_with:new_break_out.*'],
+            'new_break_in.*' => ['nullable',  'required_with:new_break_out.*', $time],
             'new_break_out' => ['nullable', 'array'],
-            'new_break_out.*' => ['nullable', 'date_format:H:i', 'required_with:new_break_in.*'],
+            'new_break_out.*' => ['nullable',  'required_with:new_break_in.*', $time],
             'comment' => ['required', 'string', 'max:1000'],
+            'breaks.*.new_break_out' => ['required', $time],
         ];
     }
 
-    // ③ エラーメッセージ
-    public function messages()
+    public function after(): array
     {
         return [
-            'work_date.required' => '勤怠日を正しく指定してください',
-            'work_date.date_format' => '勤怠日を正しく指定してください',
+            function (Validator $validator) {
+                // 基本的な形式チェックでエラーがある場合は相関チェックをスキップ
+                if ($validator->errors()->any()) {
+                    return;
+                }
 
-            'new_clock_in.required' => '出勤時刻を入力してください',
-            'new_clock_in.date_format' => '日時の形式が正しくありません',
-            'new_clock_out.required' => '退勤時刻を入力してください',
-            'new_clock_out.date_format' => '日時の形式が正しくありません',
+                $clockIn = Carbon::parse($this->new_clock_in);
+                $clockOut = Carbon::parse($this->new_clock_out);
 
+                if ($clockOut->lte($clockIn)) {
+                    $validator->errors()->add('new_clock_out', '出勤時間が不適切な値です。');
+
+                    return;
+                }
+
+                $breakIns = $this->new_break_in ?? [];
+                $breakOuts = $this->new_break_out ?? [];
+
+                // 比較用として整理済みの休憩時間リスト（[start, end]）を作成
+                $intervals = [];
+
+                foreach ($breakIns as $i => $breakIn) {
+                    $breakOut = $breakOuts[$i] ?? null;
+
+                    if (empty($breakIn) || empty($breakOut)) {
+                        continue;
+                    }
+
+                    $bStart = Carbon::parse($breakIn);
+                    $bEnd = Carbon::parse($breakOut);
+
+                    // ② 休憩終了時刻は開始時刻より後
+                    if ($bEnd->lte($bStart)) {
+                        $validator->errors()->add("new_break_out.{$i}", '休憩時間または退勤時間が不適切な値です。');
+                    }
+
+                    // ③ 休憩は勤務時間内（出勤時刻以降かつ退勤時刻以前）
+                    if ($bStart->lt($clockIn) || $bEnd->gt($clockOut)) {
+                        $validator->errors()->add("new_break_in.{$i}", '休憩時間または退勤時間が不適切な値です。');
+                    }
+
+                    // ④ 休憩時間の重複禁止チェック
+                    foreach ($intervals as $existing) {
+                        // 時間帯が重なっているかどうかの判定 logic:
+                        // (StartA < EndB) && (EndA > StartB)
+                        if ($bStart->lt($existing['end']) && $bEnd->gt($existing['start'])) {
+                            $validator->errors()->add("new_break_in.{$i}", '休憩時間が重複しています。');
+                            break;
+                        }
+                    }
+
+                    $intervals[] = [
+                        'start' => $bStart,
+                        'end' => $bEnd,
+                    ];
+                }
+            },
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'new_clock_in.required' => '出勤時間を入力してください。',
+            'new_clock_in.date_format' => '出勤時間の形式が正しくありません。',
+            'new_clock_out.required' => '退勤時間を入力してください。',
+            'new_clock_out.date_format' => '退勤時間の形式が正しくありません。',
+            'new_clock_out.after' => '休憩時間または退勤時間が不適切な値です。',
+
+            'new_break_in.*.required_with' => '休憩開始時間を入力してください。',
             'new_break_in.array' => '日時の形式が正しくありません',
             'new_break_in.*.date_format' => '日時の形式が正しくありません',
-            'new_break_in.*.required_with' => '日時の形式が正しくありません',
+
+            'new_break_out.*.required_with' => '休憩終了時間を入力してください。',
             'new_break_out.array' => '日時の形式が正しくありません',
             'new_break_out.*.date_format' => '日時の形式が正しくありません',
-            'new_break_out.*.required_with' => '日時の形式が正しくありません',
 
-            'comment.required' => '修正理由を入力してください',
-            'comment.string' => '修正理由を入力してください',
-            'comment.max' => '修正理由は1000文字以内で入力してください',
+            'comment.required' => '備考を入力してください。',
+            'comment.string' => '備考を入力してください',
+            'comment.max' => '備考は1000文字以内で入力してください',
         ];
-    }
-
-    // ④ 細かいチェック(基本のチェックが全部通ったあとに動く)
-    public function withValidator($validator)
-    {
-        $validator->after(function ($validator) {
-
-            // 基本チェックでエラーがあれば、ここでは何もしない
-            if ($validator->errors()->any()) {
-                return;
-            }
-
-            $workDate = $this->work_date;
-            $now = Carbon::now();
-
-            // "09:00" に勤怠日をくっつけて、日時にする
-            $clockIn = Carbon::parse($workDate.' '.$this->new_clock_in);
-            $clockOut = Carbon::parse($workDate.' '.$this->new_clock_out);
-
-            // 未来の時刻はダメ
-            if ($clockIn->gt($now)) {
-                $validator->errors()->add('new_clock_in', '未来の時刻は指定できません');
-            }
-            if ($clockOut->gt($now)) {
-                $validator->errors()->add('new_clock_out', '未来の時刻は指定できません');
-            }
-
-            // 退勤は出勤より後(日付またぎもここで弾かれる)
-            if ($clockOut->lte($clockIn)) {
-                $validator->errors()->add('new_clock_out', '退勤時刻は出勤時刻より後にしてください');
-
-                return;
-            }
-
-            // 休憩を1つずつチェック
-            $breaks = [];
-            $ins = $this->new_break_in ?? [];
-            $outs = $this->new_break_out ?? [];
-
-            foreach ($ins as $i => $in) {
-                $out = $outs[$i] ?? null;
-
-                // 開始も終了も空の行(追加用の空欄)は飛ばす
-                if (blank($in) && blank($out)) {
-                    continue;
-                }
-
-                $start = Carbon::parse($workDate.' '.$in);
-                $end = Carbon::parse($workDate.' '.$out);
-
-                // 未来の時刻はダメ
-                if ($start->gt($now)) {
-                    $validator->errors()->add("new_break_in.$i", '未来の時刻は指定できません');
-                }
-                if ($end->gt($now)) {
-                    $validator->errors()->add("new_break_out.$i", '未来の時刻は指定できません');
-                }
-
-                // 休憩終了は開始より後
-                if ($end->lte($start)) {
-                    $validator->errors()->add("new_break_out.$i", '休憩終了時刻は休憩開始時刻より後にしてください');
-
-                    continue;
-                }
-
-                // 休憩は勤務時間の中
-                if ($start->lt($clockIn) || $end->gt($clockOut)) {
-                    $validator->errors()->add("new_break_in.$i", '休憩時間は勤務時間内にしてください');
-
-                    continue;
-                }
-
-                $breaks[$i] = ['start' => $start, 'end' => $end];
-            }
-
-            // 休憩どうしが重なっていないか(2つずつ比べる)
-            foreach ($breaks as $i => $a) {
-                foreach ($breaks as $j => $b) {
-                    if ($i >= $j) {
-                        continue; // 同じ組を2回比べない
-                    }
-                    if ($a['start']->lt($b['end']) && $b['start']->lt($a['end'])) {
-                        $validator->errors()->add("new_break_in.$j", '休憩時間が重複しています');
-                    }
-                }
-            }
-        });
     }
 }
