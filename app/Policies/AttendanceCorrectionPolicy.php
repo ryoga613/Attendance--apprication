@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Models\AttendanceCorrection;
 use App\Models\User;
 
-
 class AttendanceCorrectionPolicy
 {
     public function viewAny(User $user): bool
@@ -28,7 +27,7 @@ class AttendanceCorrectionPolicy
     // 承認できるか: 管理者のみ、かつ「承認待ち」のものだけ
     public function approve(User $user, AttendanceCorrection $correction): bool
     {
-        return $user->admin_status ;
+        return $user->admin_status;
     }
 
     public function update(User $user, AttendanceCorrection $correction): bool

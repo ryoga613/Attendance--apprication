@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -35,7 +34,6 @@ class AdminAttendanceCorrectionController extends Controller
         return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
     }
 
-    
     public function store(UpdateAttendanceRequest $request, $id)
     {
         $attendance = Attendance::with('breaks')->findOrFail($id);
