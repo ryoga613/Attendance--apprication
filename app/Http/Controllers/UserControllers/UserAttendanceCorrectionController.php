@@ -156,8 +156,9 @@ class UserAttendanceCorrectionController extends Controller
             ->where('approval_status', '!=', '承認済み')
             ->latest()
             ->first();
+        $source = $application ? $application->proposalBreaks : $attendance->breaks;
 
-        $breaks = $attendance->breaks->map(function ($break) {
+        $breaks = $source->map(function ($break) {
             return [
                 'id' => $break->id,
                 'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,

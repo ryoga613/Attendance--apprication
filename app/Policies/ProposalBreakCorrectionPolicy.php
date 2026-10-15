@@ -6,7 +6,6 @@ use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
 use App\Models\User;
 
-
 class ProposalBreakCorrectionPolicy
 {
     public function viewAny(User $user): bool
@@ -19,7 +18,7 @@ class ProposalBreakCorrectionPolicy
         return $user->admin_status || $user->id === $correction->attendanceCorrection?->user_id;
     }
 
-     public function create(User $user, AttendanceCorrection $parent): bool
+    public function create(User $user, AttendanceCorrection $parent): bool
     {
         return $user->admin_status || $user->id === $parent->user_id;
     }
