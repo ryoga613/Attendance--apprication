@@ -24,18 +24,18 @@ class LoginRequest extends FortifyLoginRequest
     {
         return [
             'email' => 'required|email|max:255',
-            'password' =>'required|string'
+            'password' => 'required|string',
         ];
     }
 
     public function messages()
     {
         return [
-            'email.required' =>'メールアドレスを入力してください。',
+            'email.required' => 'メールアドレスを入力してください。',
             'email.email' => 'メールアドレスの形式が正しくありません。',
-            'email.max' =>'メールアドレスは２５５文字以内で入力してください。',
-            'password.required'=> 'パスワードを入力してください。',
-            'password.string' => 'パスワードの形式が正しくありません。'
+            'email.max' => 'メールアドレスは２５５文字以内で入力してください。',
+            'password.required' => 'パスワードを入力してください。',
+            'password.string' => 'パスワードの形式が正しくありません。',
         ];
     }
 }
