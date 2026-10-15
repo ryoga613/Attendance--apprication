@@ -35,68 +35,10 @@ class AdminAttendanceCorrectionController extends Controller
         return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
     }
 
-    // public function store(AttendanceCorrectionRequest $request, $id)
-    // {
-    //     $user = Auth::guard('admin')->user();
-
-    //     $attendance = Attendance::with('breaks')->findOrFail($id);
-
-    //     $attendance->update([
-    //         'work_date' => preg_replace('/\(.+?\)/u', '', $attendance->work_date),
-    //         'clock_in_at' => $request->new_clock_in,
-    //         'clock_out_at' => $request->new_clock_out,
-    //     ]);
-
-    //     $attendanceCorrection = AttendanceCorrection::create([
-    //         'user_id' => $user->id,
-    //         'attendance_id' => $attendance->id,
-    //         'clock_in_at' => $request->new_clock_in,
-    //         'clock_out_at' => $request->new_clock_out,
-    //         'approval_status' => '承認済み',
-    //         'comment' => $request->comment,
-    //     ]);
-
-    //     $ins = $request->new_break_in ?? [];
-    //     $outs = $request->new_break_out ?? [];
-
-    //     $breaks = $attendance->breaks()->orderBy('id')->get();
-    //     $breakCorrection = $attendanceCorrection->proposalBreaks;
-    //     // dd($breaks->count(), $ins, $outs);
-
-    //     foreach ($ins as $i => $in) {
-    //         $out = $outs[$i] ?? null;
-
-    //         // 空欄の行は何もしない
-    //         if (blank($in) || blank($out)) {
-    //             continue;
-    //         }
-
-    //         $data = [
-    //             'break_start_at' => $in,
-    //             'break_end_at' => $out,
-    //         ];
-
-    //         if (isset($breaks[$i])) {
-    //             $break = $breaks[$i];
-    //             $break->update($data);
-    //         } else {
-    //             $break = $attendance->breaks()->create($data);
-    //         }
-    //         ProposalBreakCorrection::create([
-    //             'attendance_correction_id' => $attendanceCorrection->id,
-    //             'proposal_break_id' => $break->id,
-    //             'break_start_at' => $in ? Carbon::parse($in)->format('Y-m-d H:i:s') : null,
-    //             'break_end_at' => $out ? Carbon::parse($out)->format('Y-m-d H:i:s') : null,
-    //         ]);
-    //     }
-
-    //     return redirect()->route('admin.attendance.list')->with('success', '勤怠の修正を申請しました');
-    // }
-
+    
     public function store(UpdateAttendanceRequest $request, $id)
     {
         $attendance = Attendance::with('breaks')->findOrFail($id);
-        // $breaks = $attendance->breaks
         $workDate = $attendance->work_date->format('Y-m-d');
 
         DB::transaction(function () use ($request, $attendance, $workDate) {
