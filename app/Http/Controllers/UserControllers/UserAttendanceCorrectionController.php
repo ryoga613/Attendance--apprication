@@ -11,11 +11,14 @@ use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class UserAttendanceCorrectionController extends Controller
 {
     public function index()
     {
+        Gate::authorize('viewAny', AttendanceCorrection::class);
+
         if (Auth::guard('admin')->check()) {
             return app(AdminAttendanceCorrectionController::class)->index();
         }
@@ -43,10 +46,14 @@ class UserAttendanceCorrectionController extends Controller
 
     public function store(StoreAttendanceCorrectionRequest $request, $id)
     {
+        Gate::authorize('store', AttendanceCorrection::class);
+
         $validated = $request->validated();
 
         $user = Auth::user();
         $attendance = Attendance::findOrFail($id);
+
+        Gate::authorize('requestCorrection', $attendance);
         $date = Carbon::parse($attendance->work_date)->toDateString();
 
         // 休憩データの取得とフォーマット（Carbonキャスト前提）
@@ -108,14 +115,13 @@ class UserAttendanceCorrectionController extends Controller
 
         }
 
-        // dd($correction);
-
         return redirect()->route('attendance.detail', $attendance->id)
             ->with('success', '勤怠の修正を申請しました');
     }
 
     public function approveStampCorrectionRequest($id)
     {
+        Gate::authorize('approve', AttendanceCorrection::class);
 
         $user = Auth::user();
         $data = Attendance::with('breaks')->findOrFail($id);
@@ -143,6 +149,7 @@ class UserAttendanceCorrectionController extends Controller
 
     public function detail($id)
     {
+
         $user = Auth::user();
 
         if (Auth::guard('admin')->check()) {
@@ -153,9 +160,11 @@ class UserAttendanceCorrectionController extends Controller
 
         $application = $attendance->attendanceCorrections()
             ->with('proposalBreaks')
-            ->where('approval_status', '!=', '承認済み')
             ->latest()
             ->first();
+
+        Gate::authorize('view', $attendance);
+
         $source = $application ? $application->proposalBreaks : $attendance->breaks;
 
         $breaks = $source->map(function ($break) {

@@ -9,11 +9,14 @@ use App\Models\ProposalBreak;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class UserAttendanceController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Attendance::class);
+
         $user = Auth::user();
 
         $date = $request->query('date')
@@ -61,6 +64,8 @@ class UserAttendanceController extends Controller
 
     public function attendanceRegisterForm()
     {
+        Gate::authorize('create', Attendance::class);
+
         $todayAttendance = Attendance::where('user_id', auth()->id())
             ->whereDate('work_date', Carbon::today())
             ->first();
@@ -72,41 +77,94 @@ class UserAttendanceController extends Controller
         return view('user.attendance-register', compact('todayAttendance', 'user', 'formattedDate', 'formattedTime'));
     }
 
+    // public function detail($id)
+    // {
+
+    //     $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+    //     $attendance = $application->AttendanceRecord;
+    //     $breaks = $attendance->breaks;
+
+    //     Gate::authorize('view', $application);
+
+    //     $proposalBreaks = $application->proposalBreaks->map(function ($break) {
+    //         return [
+    //             'id' => $break->id,
+    //             'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+    //             'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+    //         ];
+    //     });
+
+    //     if ($application->approval_status === '承認済み') {
+    //         $application == null;
+    //     }
+
+    //     if ($application == null) {
+    //         $breaks = $attendance->breaks->map(function ($break) {
+    //             return [
+    //                 'id' => $break->id,
+    //                 'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+    //                 'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+    //             ];
+    //         });
+    //     }
+
+    //     $data = ([
+    //         'application' => $application,
+    //         'id' => $attendance->id,
+    //         'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+    //         'year' => $attendance->clock_in_at->format('Y 年'),
+    //         'clock_in' => $attendance->clock_in_at?->format('H:i'),
+    //         'clock_out' => $attendance->clock_out_at?->format('H:i'),
+    //         'breaks' => $proposalBreaks ?? $breaks,
+    //         'comment' => $application?->comment,
+    //     ]);
+
+    //     $user = Auth::user();
+
+    //     return view('user.user-detail', compact('data', 'user'));
+    // }
+
     public function detail($id)
-    {
-        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-        $attendance = $application->AttendanceRecord;
+{
+    $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
 
-        if ($application->approval_status === '承認済み') {
-            $application = null;
-        }
-        $breaks = $attendance->breaks->map(function ($break) {
-            return [
-                'id' => $break->id,
-                'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
-                'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
-            ];
-        });
+    Gate::authorize('view', $application);
 
-        $data = ([
-            'application' => $application,
-            'id' => $attendance->id,
-            'date' => $attendance->work_date?->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $attendance->work_date?->format('Y 年'),
-            'clock_in' => $attendance->clock_in_at?->format('H:i'),
-            'clock_out' => $attendance->clock_out_at?->format('H:i'),
-            'breaks' => $breaks,
-            'comment' => $application?->comment,
+    $attendance = $application->AttendanceRecord;
 
-        ]);
+    $formatBreak = fn ($break) => [
+        'id' => $break->id,
+        'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+        'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+    ];
 
-        $user = Auth::user();
+    // 承認済みなら、修正申請は表示せず元の勤怠データを使う
+    $isApproved = $application->approval_status === '承認済み';
 
-        return view('user.user-detail', compact('data', 'user'));
-    }
+    $breaks = $isApproved
+        ? $attendance->breaks->map($formatBreak)
+        : $application->proposalBreaks->map($formatBreak);
+
+    $data = [
+        'application' => $isApproved ? null : $application,
+        'id' => $attendance->id,
+        'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+        'year' => $attendance->clock_in_at->format('Y 年'),
+        'clock_in' => $attendance->clock_in_at?->format('H:i'),
+        'clock_out' => $attendance->clock_out_at?->format('H:i'),
+        'breaks' => $breaks,
+        'comment' => $isApproved ? null : $application->comment,
+    ];
+
+    $user = Auth::user();
+
+    return view('user.user-detail', compact('data', 'user'));
+}
 
     public function store(Request $request)
     {
+        Gate::authorize('store', Attendance::class);
+
         $user = Auth::user();
         $action = $request->input('action');
 
@@ -193,6 +251,9 @@ class UserAttendanceController extends Controller
 
     public function approveStampCorrectionRequest($id)
     {
+
+        Gate::authorize('requestCorrection', Attendance::class);
+
         $user = Auth::user();
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
 
