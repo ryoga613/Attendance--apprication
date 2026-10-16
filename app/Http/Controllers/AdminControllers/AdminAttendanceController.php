@@ -8,11 +8,13 @@ use App\Models\AttendanceCorrection;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class AdminAttendanceController extends Controller
 {
     public function index()
     {
+        Gate::authorize('manage', Attendance::class);
 
         $date = Carbon::parse(request()->get('date', now()->toDateString()));
 
@@ -30,9 +32,12 @@ class AdminAttendanceController extends Controller
 
     public function detail($id)
     {
+
         $attendance = Attendance::with('breaks')->findOrFail($id);
 
         $application = AttendanceCorrection::where('attendance_id', $id)->first();
+
+        Gate::authorize('view', $attendance);
 
         $attendanceRecord = [
             'application' => $application,
@@ -54,6 +59,8 @@ class AdminAttendanceController extends Controller
 
     public function staffList()
     {
+        Gate::authorize('manage', Attendance::class);
+
         $users = User::all();
 
         return view('admin.staff-list', compact('users'));
@@ -61,6 +68,8 @@ class AdminAttendanceController extends Controller
 
     public function staffAttendance($id)
     {
+        Gate::authorize('manage', Attendance::class);
+
         $user = User::findOrFail($id);
         $attendanceRecords = Attendance::with('breaks')->where('user_id', $id)->whereMonth('work_date', request()->get('month', now()->month))->get();
 

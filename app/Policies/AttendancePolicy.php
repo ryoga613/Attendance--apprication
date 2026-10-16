@@ -12,6 +12,12 @@ class AttendancePolicy
         return $user->admin_status ? true : null;
     }
 
+    // AttendancePolicy に追加(管理者は before() で許可されるので、一般ユーザーだけ拒否になる)
+    public function manage(User $user): bool
+    {
+        return false;
+    }
+
     public function viewAny(User $user): bool
     {
         return true;
@@ -19,12 +25,11 @@ class AttendancePolicy
 
     public function view(User $user, Attendance $attendance): bool
     {
-        return $user->id === $attendance->user_id;
+        return $user->admin_status || $user->id === $attendance->user_id;
     }
 
     public function create(User $user): bool
     {
-
         return true;
     }
 
@@ -33,14 +38,22 @@ class AttendancePolicy
         return false;
     }
 
-    // 修正申請は、自分の勤怠だけ
     public function requestCorrection(User $user, Attendance $attendance): bool
     {
-        return $user->id === $attendance->user_id;
+        return $user->id === $attendance->user_id
+            && ! $attendance->attendanceCorrections()
+                ->where('approval_status', '承認待ち')
+                ->exists();
     }
 
     public function delete(User $user, Attendance $attendance): bool
     {
         return false;
+    }
+
+    public function viewReport(User $user): bool
+    {
+        return true;
+
     }
 }

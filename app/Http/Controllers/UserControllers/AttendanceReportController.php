@@ -4,11 +4,13 @@ namespace App\Http\Controllers\UserControllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use Illuminate\Support\Facades\Gate;
 
 class AttendanceReportController extends Controller
 {
     public function index()
     {
+        Gate::authorize('viewReport', Attendance::class);
         $start = now()->startOfMonth()->subMonths(5); // 今月を含めて6か月分
 
         $records = Attendance::with('breaks')

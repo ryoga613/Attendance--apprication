@@ -9,11 +9,14 @@ use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class AdminAttendanceCorrectionController extends Controller
 {
     public function index()
     {
+        Gate::authorize('viewAny', AttendanceCorrection::class);
+
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
             ->latest()
             ->get();
@@ -36,8 +39,11 @@ class AdminAttendanceCorrectionController extends Controller
 
     public function store(UpdateAttendanceRequest $request, $id)
     {
+
         $attendance = Attendance::with('breaks')->findOrFail($id);
         $workDate = $attendance->work_date->format('Y-m-d');
+
+        Gate::authorize('update', $attendance);
 
         DB::transaction(function () use ($request, $attendance, $workDate) {
             $clockIn = $workDate.' '.$request->new_clock_in;
@@ -99,35 +105,41 @@ class AdminAttendanceCorrectionController extends Controller
 
     public function approveStampCorrectionRequest($id)
     {
-        $data = Attendance::with('breaks')->findOrFail($id);
+
+        // $data = Attendance::with('breaks')->findOrFail($id);
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-        $breaks = $data->breaks->map(function ($break) {
+        // dd($application);
+
+        $breaks = $application->proposalBreaks->map(function ($break) {
             return [
-                'break_in' => $break->break_start_at->format('H:i'),
-                'break_out' => $break->break_end_at->format('H:i'),
+                'break_in' => $break->break_start_at,
+                'break_out' => $break->break_end_at,
             ];
         });
+
         $data = ([
 
             'breaks' => $breaks,
-            'id' => $data->id,
-            'date' => $data->work_date->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $data->work_date?->format('Y 年'),
-            'clock_in' => $data->clock_in_at->format('H:i'),
-            'clock_out' => $data->clock_out_at->format('H:i'),
-            'comment' => $data->comment,
+            'id' => $application->id,
+            'date' => $application->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+            'year' => $application->clock_in_at->format('Y 年'),
+            'clock_in' => $application->clock_in_at->format('H:i'),
+            'clock_out' => $application->clock_out_at->format('H:i'),
+            'comment' => $application->comment,
             'application' => $application,
         ]);
 
         $user = Auth::guard('admin')->user() ?? Auth::user();
 
-        // dd($application);
+        Gate::forUser($user)->authorize('view', $application);
+
         return view('admin.admin-application-detail', compact('application', 'user'));
     }
 
     public function updateStampCorrectionRequest($id)
     {
         $application = AttendanceCorrection::findOrFail($id);
+        Gate::authorize('approve', $application);
 
         $attendance = Attendance::findOrFail($application->attendance_id);
 
