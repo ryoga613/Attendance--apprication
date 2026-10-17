@@ -1,0 +1,134 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Attendance;
+use App\Models\ProposalBreak;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AdminAttendanceControllerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $admin;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 今日を固定する
+        Carbon::setTestNow('2026-10-16 10:00:00');
+
+        $this->admin = User::factory()->create(['admin_status' => true]);
+
+        $this->makeAttendance('前日さん', '2026-10-15', '08:30');
+        $this->makeAttendance('当日さん', '2026-10-16', '09:00');
+        $this->makeAttendance('翌日さん', '2026-10-17', '10:15');
+    }
+
+    private function makeAttendance(string $name, string $date, string $clockIn): void
+    {
+        $user = User::factory()->create(['name' => $name]);
+
+        Attendance::create([
+            'user_id' => $user->id,
+            'work_date' => $date,
+            'clock_in_at' => "$date $clockIn:00",
+            'clock_out_at' => "$date 18:00:00",
+        ]);
+    }
+
+    private function openList(string $query = '')
+    {
+        return $this->actingAs($this->admin, 'admin')
+            ->get('/admin/attendance/list'.$query);
+    }
+
+    public function test_現在の日付が表示される()
+    {
+        $this->openList()
+            ->assertStatus(200)
+            ->assertSee('2026/10/16')
+            ->assertSee('当日さん')
+            ->assertSee('09:00');
+    }
+
+    public function test_前日を押すと前日の勤怠が表示される()
+    {
+        // ボタン(リンク)が前日の日付を指している
+        $this->openList()->assertSee('date=2026-10-15');
+
+        // 前日で開くと、前日の勤怠が出る
+        $this->openList('?date=2026-10-15')
+            ->assertSee('2026/10/15')
+            ->assertSee('前日さん')
+            ->assertSee('08:30')
+            ->assertDontSee('当日さん');
+    }
+
+    public function test_翌日を押すと翌日の勤怠が表示される()
+    {
+        $this->openList()->assertSee('date=2026-10-17');
+
+        $this->openList('?date=2026-10-17')
+            ->assertSee('2026/10/17')
+            ->assertSee('翌日さん')
+            ->assertSee('10:15')
+            ->assertDontSee('当日さん');
+    }
+
+    public function test_勤務詳細が見れる()
+    {
+        $attendance = Attendance::factory()->create([
+            'clock_in_at' => now()->setTime(9, 0),
+            'clock_out_at' => now()->setTime(18, 0),
+        ]);
+
+        $proposalBreak = ProposalBreak::create([
+            'attendance_id' => $attendance->id,
+            'break_start_at' => now()->setTime(12, 0),
+            'break_end_at' => now()->setTime(13, 0),
+        ]);
+        $id = $attendance->id;
+        $response = $this->actingAs($this->admin, 'admin')
+            ->get("admin/attendance/{$id}");
+
+        $record = $response->viewData('attendanceRecord');
+        $response->assertStatus(200);
+        $response->assertViewIs('admin.admin-detail');
+        $this->assertEquals('12:00', $record['breaks'][0]['break_in']);
+        $this->assertEquals('13:00', $record['breaks'][0]['break_out']);
+    }
+
+    public function test_スタッフ一覧が見れる()
+    {
+        $response = $this->actingAs($this->admin, 'admin')->get('admin/staff/list');
+
+        $response->assertStatus(200);
+        $response->assertViewIs('admin.staff-list');
+        $response->assertViewHas('users');
+    }
+
+    public function test_スタッフの勤怠一覧が見れる()
+    {
+        $user = User::where('name', '当日さん')->first();
+
+        $id = $user->id;
+        $response = $this->actingAs($this->admin, 'admin')->get("admin/attendance/staff/{$id}");
+
+        $response->assertStatus(200);
+        $response->assertViewIs('admin.staff-attendance-list');
+        $response->assertViewHasAll([
+            'user',
+            'attendanceRecords',
+            'date',
+            'formattedAttendanceRecords',
+            'previousMonth',
+            'nextMonth',
+        ]);
+
+    }
+}
