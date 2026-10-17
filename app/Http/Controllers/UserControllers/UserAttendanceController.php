@@ -125,41 +125,41 @@ class UserAttendanceController extends Controller
     // }
 
     public function detail($id)
-{
-    $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+    {
+        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
 
-    Gate::authorize('view', $application);
+        Gate::authorize('view', $application);
 
-    $attendance = $application->AttendanceRecord;
+        $attendance = $application->AttendanceRecord;
 
-    $formatBreak = fn ($break) => [
-        'id' => $break->id,
-        'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
-        'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
-    ];
+        $formatBreak = fn ($break) => [
+            'id' => $break->id,
+            'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
+            'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
+        ];
 
-    // 承認済みなら、修正申請は表示せず元の勤怠データを使う
-    $isApproved = $application->approval_status === '承認済み';
+        // 承認済みなら、修正申請は表示せず元の勤怠データを使う
+        $isApproved = $application->approval_status === '承認済み';
 
-    $breaks = $isApproved
-        ? $attendance->breaks->map($formatBreak)
-        : $application->proposalBreaks->map($formatBreak);
+        $breaks = $isApproved
+            ? $attendance->breaks->map($formatBreak)
+            : $application->proposalBreaks->map($formatBreak);
 
-    $data = [
-        'application' => $isApproved ? null : $application,
-        'id' => $attendance->id,
-        'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
-        'year' => $attendance->clock_in_at->format('Y 年'),
-        'clock_in' => $attendance->clock_in_at?->format('H:i'),
-        'clock_out' => $attendance->clock_out_at?->format('H:i'),
-        'breaks' => $breaks,
-        'comment' => $isApproved ? null : $application->comment,
-    ];
+        $data = [
+            'application' => $isApproved ? null : $application,
+            'id' => $attendance->id,
+            'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
+            'year' => $attendance->clock_in_at->format('Y 年'),
+            'clock_in' => $attendance->clock_in_at?->format('H:i'),
+            'clock_out' => $attendance->clock_out_at?->format('H:i'),
+            'breaks' => $breaks,
+            'comment' => $isApproved ? null : $application->comment,
+        ];
 
-    $user = Auth::user();
+        $user = Auth::user();
 
-    return view('user.user-detail', compact('data', 'user'));
-}
+        return view('user.user-detail', compact('data', 'user'));
+    }
 
     public function store(Request $request)
     {
