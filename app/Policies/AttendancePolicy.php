@@ -12,6 +12,11 @@ class AttendancePolicy
         return $user->admin_status ? true : null;
     }
 
+    public function store()
+    {
+        return true;
+    }
+
     // AttendancePolicy に追加(管理者は before() で許可されるので、一般ユーザーだけ拒否になる)
     public function manage(User $user): bool
     {
