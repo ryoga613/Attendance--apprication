@@ -16,7 +16,9 @@ class UserAttendanceCorrectionControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Attendance $attendance;
+
     private ProposalBreak $break;
 
     protected function setUp(): void
@@ -26,22 +28,22 @@ class UserAttendanceCorrectionControllerTest extends TestCase
         Carbon::setTestNow('2026-10-16 10:00:00');
 
         $this->user = User::factory()->create([
-            'name'              => 'テスト太郎',
+            'name' => 'テスト太郎',
             'attendance_status' => '勤務外',
         ]);
 
         // 元の勤怠(9:00-18:00、休憩12:00-13:00)
         $this->attendance = Attendance::create([
-            'user_id'      => $this->user->id,
-            'work_date'    => '2026-10-16',
-            'clock_in_at'  => '2026-10-16 09:00:00',
+            'user_id' => $this->user->id,
+            'work_date' => '2026-10-16',
+            'clock_in_at' => '2026-10-16 09:00:00',
             'clock_out_at' => '2026-10-16 18:00:00',
         ]);
 
         $this->break = ProposalBreak::create([
-            'attendance_id'  => $this->attendance->id,
+            'attendance_id' => $this->attendance->id,
             'break_start_at' => '2026-10-16 12:00:00',
-            'break_end_at'   => '2026-10-16 13:00:00',
+            'break_end_at' => '2026-10-16 13:00:00',
         ]);
     }
 
@@ -54,19 +56,19 @@ class UserAttendanceCorrectionControllerTest extends TestCase
     private function makeCorrection(?User $owner = null, string $status = '承認待ち'): AttendanceCorrection
     {
         $correction = AttendanceCorrection::create([
-            'user_id'         => ($owner ?? $this->user)->id,
-            'attendance_id'   => $this->attendance->id,
-            'clock_in_at'     => '2026-10-16 10:00:00',
-            'clock_out_at'    => '2026-10-16 19:00:00',
+            'user_id' => ($owner ?? $this->user)->id,
+            'attendance_id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 10:00:00',
+            'clock_out_at' => '2026-10-16 19:00:00',
             'approval_status' => $status,
-            'comment'         => '電車遅延のため',
+            'comment' => '電車遅延のため',
         ]);
 
         ProposalBreakCorrection::create([
             'attendance_correction_id' => $correction->id,
-            'proposal_break_id'        => $this->break->id,
-            'break_start_at'           => '2026-10-16 12:30:00',
-            'break_end_at'             => '2026-10-16 13:30:00',
+            'proposal_break_id' => $this->break->id,
+            'break_start_at' => '2026-10-16 12:30:00',
+            'break_end_at' => '2026-10-16 13:30:00',
         ]);
 
         return $correction;
@@ -76,11 +78,11 @@ class UserAttendanceCorrectionControllerTest extends TestCase
     private function changedInput(array $override = []): array
     {
         return array_merge([
-            'new_clock_in'  => '10:00',
+            'new_clock_in' => '10:00',
             'new_clock_out' => '19:00',
-            'new_break_in'  => ['12:30'],
+            'new_break_in' => ['12:30'],
             'new_break_out' => ['13:30'],
-            'comment'       => '電車遅延のため',
+            'comment' => '電車遅延のため',
         ], $override);
     }
 
@@ -160,42 +162,42 @@ class UserAttendanceCorrectionControllerTest extends TestCase
     public function test_修正を申請できる()
     {
         $response = $this->asUser()
-            ->post('/attendance/' . $this->attendance->id, $this->changedInput());
+            ->post('/attendance/'.$this->attendance->id, $this->changedInput());
 
         $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('attendance.detail', $this->attendance->id));
         $response->assertSessionHas('success', '勤怠の修正を申請しました');
 
         $this->assertDatabaseHas('attendance_corrections', [
-            'user_id'         => $this->user->id,
-            'attendance_id'   => $this->attendance->id,
-            'clock_in_at'     => '2026-10-16 10:00:00',
-            'clock_out_at'    => '2026-10-16 19:00:00',
+            'user_id' => $this->user->id,
+            'attendance_id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 10:00:00',
+            'clock_out_at' => '2026-10-16 19:00:00',
             'approval_status' => '承認待ち',
-            'comment'         => '電車遅延のため',
+            'comment' => '電車遅延のため',
         ]);
 
         $this->assertDatabaseHas('proposal_break_corrections', [
             'proposal_break_id' => $this->break->id,
-            'break_start_at'    => '2026-10-16 12:30:00',
-            'break_end_at'      => '2026-10-16 13:30:00',
+            'break_start_at' => '2026-10-16 12:30:00',
+            'break_end_at' => '2026-10-16 13:30:00',
         ]);
 
         // 元の勤怠は、申請の時点では変わらない
         $this->assertDatabaseHas('attendances', [
-            'id'          => $this->attendance->id,
+            'id' => $this->attendance->id,
             'clock_in_at' => '2026-10-16 09:00:00',
         ]);
     }
 
     public function test_変更がない場合は申請できない()
     {
-        $response = $this->asUser()->post('/attendance/' . $this->attendance->id, [
-            'new_clock_in'  => '09:00',
+        $response = $this->asUser()->post('/attendance/'.$this->attendance->id, [
+            'new_clock_in' => '09:00',
             'new_clock_out' => '18:00',
-            'new_break_in'  => ['12:00'],
+            'new_break_in' => ['12:00'],
             'new_break_out' => ['13:00'],
-            'comment'       => 'そのまま',
+            'comment' => 'そのまま',
         ]);
 
         $response->assertSessionHasErrors(['comment' => '変更がありません']);
@@ -207,7 +209,7 @@ class UserAttendanceCorrectionControllerTest extends TestCase
         $other = User::factory()->create();
 
         $this->actingAs($other)
-            ->post('/attendance/' . $this->attendance->id, $this->changedInput())
+            ->post('/attendance/'.$this->attendance->id, $this->changedInput())
             ->assertStatus(403);
 
         $this->assertDatabaseCount('attendance_corrections', 0);

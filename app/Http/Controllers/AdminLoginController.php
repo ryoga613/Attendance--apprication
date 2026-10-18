@@ -20,7 +20,7 @@ class AdminLoginController extends Controller
             if (Auth::guard('admin')->user()->admin_status !== 1) {
                 Auth::guard('admin')->logout();
 
-                return back()->withErrors(['email' => 'ログイン情報が登録されていません']);
+                return back()->withErrors(['email' => 'ログイン情報が登録されていません。']);
             }
 
             $request->session()->regenerate();
@@ -28,6 +28,6 @@ class AdminLoginController extends Controller
             return redirect()->route('admin.attendance.list');
         }
 
-        return back()->withErrors(['email' => 'ログイン情報が登録されていません']);
+        return back()->withErrors(['email' => 'ログイン情報が登録されていません。']);
     }
 }
