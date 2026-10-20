@@ -181,7 +181,7 @@ class UserAttendanceCorrectionController extends Controller
             'year' => $attendance->clock_in_at->format('Y 年'),
             'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
             'clock_in' => $attendance->clock_in_at->format('H:i'),
-            'clock_out' => $attendance->clock_out_at->format('H:i'),
+            'clock_out' => $attendance->clock_out_at?->format('H:i'),
             'breaks' => $breaks,
             'comment' => $application?->comment,
         ]);

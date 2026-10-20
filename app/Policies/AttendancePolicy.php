@@ -7,8 +7,12 @@ use App\Models\User;
 
 class AttendancePolicy
 {
-    public function before(User $user): ?bool
+    public function before(User $user, string $ability): ?bool
     {
+        if (str_starts_with($ability, 'api')) {
+            return null;
+        }
+
         return $user->admin_status ? true : null;
     }
 
@@ -60,5 +64,16 @@ class AttendancePolicy
     {
         return true;
 
+    }
+
+    // API
+    public function apiUpdate(User $user, Attendance $attendance)
+    {
+        return $user->id === $attendance->user_id;
+    }
+
+    public function apiDelete(User $user, Attendance $attendance): bool
+    {
+        return $user->id === $attendance->user_id;
     }
 }
