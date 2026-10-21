@@ -37,12 +37,15 @@ class AttendanceReportController extends Controller
         }
 
         // 遅刻・早退・長時間労働の回数
-        $anomalies = [
-            'late_count' => $records->sum('late_count'),
-            'early_leave_count' => $records->sum('early_leave_count'),
-            'long_work_count' => $records->sum('long_work_count'),
-        ];
+        $thisMonthRecords = $records->filter(
+            fn ($a) => $a->work_date->isSameMonth(now())
+        );
 
+        $anomalies = [
+            'late_count' => $thisMonthRecords->sum('late_count'),
+            'early_leave_count' => $thisMonthRecords->sum('early_leave_count'),
+            'long_work_count' => $thisMonthRecords->sum('long_work_count'),
+        ];
         // 全体の集計
         $summary = [
             'total_work_minutes' => $completed->sum('total_work_minutes'),

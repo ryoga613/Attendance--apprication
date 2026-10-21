@@ -24,7 +24,9 @@ class Attendance extends Model
 
     public const STANDARD_END_HOUR = 18;
 
-    public const STANDARD_DAILY_SECONDS = 8 * 3600; // 所定労働時間 8時間
+    public const STANDARD_DAILY_MINUTES = 8 * 60; // 所定労働時間 8時間
+
+    public const LONG_WORK_TIME_MINUTES = 10 * 60; // 長時間労働 10時間
 
     // $fillable など、既存の設定はそのまま残してください
     protected $casts = [
@@ -56,45 +58,43 @@ class Attendance extends Model
 
     // ---- 計算(数値で返す。合計や集計にはこちらを使う) ----
 
-    /** 休憩合計(秒) */
-    public function getBreakSecondsAttribute(): int
+    /** 休憩合計(分) */
+    public function getBreakMinutesAttribute(): int
     {
         return (int) $this->breaks->sum(
             fn ($b) => ($b->break_start_at && $b->break_end_at)
-                ? $b->break_start_at->diffInSeconds($b->break_end_at)
+                ? $b->break_start_at->diffInMinutes($b->break_end_at)
                 : 0
         );
     }
 
-    /** 実労働(秒) = 勤務時間 - 休憩。未退勤は 0 */
-    public function getTotalSecondsAttribute(): int
+    /** 実労働（分）= 勤務時間 - 休憩時間。未退勤は0 */
+    public function getTotalWorkMinutesAttribute(): int
     {
         if (! $this->clock_in_at || ! $this->clock_out_at) {
             return 0;
         }
 
-        $seconds = $this->clock_in_at->diffInSeconds($this->clock_out_at) - $this->break_seconds;
+        $totalMinutes = $this->clock_in_at->diffInMinutes($this->clock_out_at);
 
-        return max($seconds, 0);
-    }
-
-    /** 実労働(分) */
-    public function getTotalWorkMinutesAttribute(): int
-    {
-        return intdiv($this->total_seconds, 60);
+        return max($totalMinutes - $this->break_minutes, 0);
     }
 
     /** 残業(分) */
     public function getTotalOvertimeMinutesAttribute(): int
     {
-        return intdiv(max($this->total_seconds - self::STANDARD_DAILY_SECONDS, 0), 60);
+        return max(
+            $this->total_work_minutes - self::STANDARD_DAILY_MINUTES,
+            0
+        );
     }
 
     /** 遅刻なら 1 */
     public function getLateCountAttribute(): int
     {
         return $this->clock_in_at
-            && $this->clock_in_at->gt($this->work_date->copy()->setTime(self::STANDARD_START_HOUR, 0))
+            && $this->clock_in_at->gt($this->work_date->copy()->setTime(self::STANDARD_START_HOUR, 0)
+            )
             ? 1 : 0;
     }
 
@@ -102,14 +102,16 @@ class Attendance extends Model
     public function getEarlyLeaveCountAttribute(): int
     {
         return $this->clock_out_at
-            && $this->clock_out_at->lt($this->work_date->copy()->setTime(self::STANDARD_END_HOUR, 0))
+            && $this->clock_out_at->lt(
+                $this->work_date->copy()->setTime(self::STANDARD_END_HOUR, 0)
+            )
             ? 1 : 0;
     }
 
     /** 所定労働時間を超えたら 1 */
     public function getLongWorkCountAttribute(): int
     {
-        return $this->total_seconds > self::STANDARD_DAILY_SECONDS ? 1 : 0;
+        return $this->total_work_minutes > self::LONG_WORK_TIME_MINUTES ? 1 : 0;
     }
 
     // ---- 表示用(既存のbladeを壊さないよう、名前はそのまま) ----
@@ -136,7 +138,13 @@ class Attendance extends Model
 
     public function getTotalBreakTimeAttribute()
     {
-        return $this->break_seconds ? gmdate('H:i:s', $this->break_seconds) : null;
+        return $this->break_minutes > 0
+            ? sprintf(
+                '%02d:%02d',
+                intdiv($this->break_minutes, 60),
+                $this->break_minutes % 60
+            )
+            : null;
     }
 
     public function getTotalTimeAttribute()
@@ -145,7 +153,11 @@ class Attendance extends Model
             return null;
         }
 
-        return gmdate('H:i:s', $this->total_seconds);
+        return sprintf(
+            '%02d:%02d',
+            intdiv($this->total_work_minutes, 60),
+            $this->total_work_minutes % 60
+        );
     }
 
     public function getNewDateAttribute()
