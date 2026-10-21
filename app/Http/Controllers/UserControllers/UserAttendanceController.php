@@ -77,53 +77,6 @@ class UserAttendanceController extends Controller
         return view('user.attendance-register', compact('todayAttendance', 'user', 'formattedDate', 'formattedTime'));
     }
 
-    // public function detail($id)
-    // {
-
-    //     $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-    //     $attendance = $application->AttendanceRecord;
-    //     $breaks = $attendance->breaks;
-
-    //     Gate::authorize('view', $application);
-
-    //     $proposalBreaks = $application->proposalBreaks->map(function ($break) {
-    //         return [
-    //             'id' => $break->id,
-    //             'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
-    //             'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
-    //         ];
-    //     });
-
-    //     if ($application->approval_status === '承認済み') {
-    //         $application == null;
-    //     }
-
-    //     if ($application == null) {
-    //         $breaks = $attendance->breaks->map(function ($break) {
-    //             return [
-    //                 'id' => $break->id,
-    //                 'break_in' => $break->break_start_at ? Carbon::parse($break->break_start_at)->format('H:i') : null,
-    //                 'break_out' => $break->break_end_at ? Carbon::parse($break->break_end_at)->format('H:i') : null,
-    //             ];
-    //         });
-    //     }
-
-    //     $data = ([
-    //         'application' => $application,
-    //         'id' => $attendance->id,
-    //         'date' => $attendance->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
-    //         'year' => $attendance->clock_in_at->format('Y 年'),
-    //         'clock_in' => $attendance->clock_in_at?->format('H:i'),
-    //         'clock_out' => $attendance->clock_out_at?->format('H:i'),
-    //         'breaks' => $proposalBreaks ?? $breaks,
-    //         'comment' => $application?->comment,
-    //     ]);
-
-    //     $user = Auth::user();
-
-    //     return view('user.user-detail', compact('data', 'user'));
-    // }
-
     public function detail($id)
     {
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
