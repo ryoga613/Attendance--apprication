@@ -21,10 +21,18 @@ class AttendanceController extends Controller
     }
 
     // 詳細を取得する
-    public function show(Attendance $attendanceRecord)
-    {
-        return response()->json($attendanceRecord);
+   public function show(int $id)
+{
+    $attendance = Attendance::find($id);
+
+    if (! $attendance) {
+        return response()->json([
+            'message' => '勤怠情報が見つかりませんでした。',
+        ], 404);
     }
+
+    return response()->json($attendance);
+}
 
     // 新規登録する
     public function store(StoreAttendanceRequest $request)
