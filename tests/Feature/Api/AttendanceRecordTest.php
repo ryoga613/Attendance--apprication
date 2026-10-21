@@ -63,10 +63,10 @@ class AttendanceRecordTest extends TestCase
         $response = $this->get('/api/v1/attendance-records/99999');
 
         // $response->dump();
-       $response->assertStatus(404)
-    ->assertJson([
-        'message' => '勤怠情報が見つかりませんでした。',
-    ]);
+        $response->assertStatus(404)
+            ->assertJson([
+                'message' => '勤怠情報が見つかりませんでした。',
+            ]);
     }
 
     public function test_ap_iで勤怠の登録ができる()
@@ -145,22 +145,21 @@ class AttendanceRecordTest extends TestCase
         ]);
     }
 
-
     public function test_バリデーションエラー時に422と日本語エラーメッセージが返る()
-{
-    $user = User::factory()->create();
-    $token = $user->createToken('test-token')->plainTextToken;
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
 
-    // 必須項目を送らずに登録リクエストを実行
-    $response = $this->withToken($token)
-        ->postJson('/api/v1/attendance-records', []);
+        // 必須項目を送らずに登録リクエストを実行
+        $response = $this->withToken($token)
+            ->postJson('/api/v1/attendance-records', []);
 
-    // 422と日本語エラーメッセージを確認
-    $response->assertStatus(422)
-        ->assertJsonValidationErrors([
-            'work_date',
-        ]);
-}
+        // 422と日本語エラーメッセージを確認
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors([
+                'work_date',
+            ]);
+    }
 
     public function test_ap_iで勤怠を削除できる(): void
     {
