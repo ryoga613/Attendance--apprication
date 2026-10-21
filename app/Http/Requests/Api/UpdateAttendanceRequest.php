@@ -16,8 +16,8 @@ class UpdateAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'work_date' => ['nullable', 'date',Rule::unique('attendances', 'work_date')
-                ->where('user_id', $this->user()->id),],
+            'work_date' => ['nullable', 'date', Rule::unique('attendances', 'work_date')
+                ->where('user_id', $this->user()->id), ],
             'clock_in_at' => ['nullable', 'date'],
             'clock_out_at' => ['nullable', 'date', 'after:clock_in_at'],
             'comment' => ['nullable', 'string', 'max:1000'],
@@ -27,10 +27,16 @@ class UpdateAttendanceRequest extends FormRequest
     public function messages(): array
     {
         return [
-            // 'work_date.required' => '勤務日を入力してください。',
-            // 'clock_in_at.required' => '出勤時間を入力してください。',
-            'clock_out_at.after' => '退勤時間は出勤時間より後にしてください。',
-            'clock_out_at.required' => '待機イン時刻を入力してください。',
+
+            'work_date.date' => '勤務日は正しい日付を入力してください。',
+            'work_date.unique' => 'この勤務日はすでに登録されています。',
+
+            'clock_in_at.date' => '出勤時刻は正しい日時を入力してください。',
+
+            'clock_out_at.date' => '退勤時刻は正しい日時を入力してください。',
+            'clock_out_at.after' => '退勤時刻は出勤時刻より後の時間を入力してください。',
+
+            'comment.string' => '備考は文字列で入力してください。',
             'comment.max' => '備考は1000文字以内で入力してください。',
         ];
     }
