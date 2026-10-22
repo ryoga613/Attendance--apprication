@@ -21,7 +21,7 @@ class UpdateAttendanceRequest extends FormRequest
                 ->ignore($this->route('attendanceRecord'))],
             'clock_in_at' => ['nullable', 'date'],
             'clock_out_at' => ['nullable', 'date', 'after:clock_in_at'],
-            'comment' => ['nullable', 'string', 'max:1000'],
+            'comment' => ['nullable', 'string', 'max:255'],
         ];
     }
 
