@@ -52,8 +52,8 @@
 ## 環境構築
 
 ```bash
-# 1. リポジトリを取得する
-git clone <https://github.com/ryoga613/Attendance--apprication>
+# 1. リポジトリを取得する（フォルダ名を attendance-app にする）
+git clone https://github.com/ryoga613/Attendance--apprication.git attendance-app
 cd attendance-app
 
 # 2. 環境変数ファイルを作る
@@ -62,17 +62,10 @@ cp .env.example .env
 # 3. 依存パッケージをインストールする
 docker run --rm \
   -u "$(id -u):$(id -g)" \
-  -v "$(pwd):/var/www/html" -w /var/www/html \
-  -e COMPOSER_CACHE_DIR=/tmp/composer_cache \
+  -v "$(pwd):/var/www/html" \
+  -w /var/www/html \
   laravelsail/php82-composer:latest \
-  composer create-project laravel/laravel:^10.0 attendance-app
-cd attendance-app
-
-docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html \
-  laravelsail/php82-composer:latest \
-  php artisan sail:install --with=mysql,mailpit
-
-# Apple Silicon(M1/M2/M3/M4等)の場合は compose.yaml の mysql に「platform: 'linux/amd64'」を追記。
+  composer install --ignore-platform-reqs
 
 # 4. コンテナを起動する
 ./vendor/bin/sail up -d
@@ -80,9 +73,9 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/htm
 # 5. アプリケーションキーを作る
 ./vendor/bin/sail artisan key:generate
 
-# 6. テーブルを作り、初期データを入れる
+# 6. テーブルを作り、初期データを入れる（MySQLの起動に数十秒かかるので、失敗したら少し待って再実行）
 ./vendor/bin/sail artisan migrate --seed
-```
+
 
 起動後、ブラウザで http://localhost にアクセスしてください。
 phpMyAdminは　http://localhost:8080 にアクセスしてください。
