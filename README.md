@@ -1,66 +1,231 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 勤怠管理アプリ
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+勤怠管理アプリです。出勤・退勤の打刻、勤怠の修正申請、月次レポートの表示に加えて、外部のシステムやアプリから勤怠を操作できる REST API（Laravel Sanctum 認証）を備えています。
 
-## About Laravel
+<!-- TODO: スクリーンショットを追加する（例）
+![勤怠打刻画面](docs/images/attendance.png)
+-->
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 目次
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [主な機能](#主な機能)
+- [使用技術](#使用技術)
+- [環境構築](#環境構築)
+- [テスト](#テスト)
+- [API 仕様](#api-仕様)
+- [テーブル設計](#テーブル設計)
+- [工夫した点](#工夫した点)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 主な機能
 
-## Learning Laravel
+### 画面（Web）
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- 出勤・退勤・休憩の打刻
+- 勤怠一覧・勤怠詳細の確認
+- 勤怠の修正申請（備考の入力が必須。承認待ちの間は、重ねて申請できない）
+- 管理者による修正申請の承認
+- 月次レポート（勤務時間・残業時間の月別推移、遅刻・早退・長時間労働の回数）
+  - 直近 6 か月分を集計する
+  - 退勤済みの勤怠だけを、合計・平均に含める
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### API
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- 勤怠の一覧取得・詳細取得（認証不要）
+- 勤怠の新規登録（認証必須）
+- 勤怠の更新・削除（認証必須。本人、管理者のみ）
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 使用技術
 
-### Premium Partners
+| 区分 | 内容 |
+|---|---|
+| 言語 | PHP |
+| フレームワーク | Laravel |
+| データベース | MySQL |
+| 開発環境 | Docker（Laravel Sail） |
+| API 認証 | Laravel Sanctum（トークン認証） |
+| テスト | PHPUnit（Laravel の Feature テスト） |
+| バージョン管理 | Git / GitHub |
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+<!-- TODO: PHP と Laravel のバージョンを記載する（例: PHP 8.3 / Laravel 10.x） -->
 
-## Contributing
+## 環境構築
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+# 1. リポジトリを取得する
+git clone <https://github.com/ryoga613/Attendance--apprication>
+cd attendance-app
 
-## Code of Conduct
+# 2. 環境変数ファイルを作る
+cp .env.example .env
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 3. 依存パッケージをインストールする
+docker run --rm \
+  -u "$(id -u):$(id -g)" \
+  -v "$(pwd):/var/www/html" -w /var/www/html \
+  -e COMPOSER_CACHE_DIR=/tmp/composer_cache \
+  laravelsail/php82-composer:latest \
+  composer create-project laravel/laravel:^10.0 attendance-app
+cd attendance-app
 
-## Security Vulnerabilities
+docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html \
+  laravelsail/php82-composer:latest \
+  php artisan sail:install --with=mysql,mailpit
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Apple Silicon(M1/M2/M3/M4等)の場合は compose.yaml の mysql に「platform: 'linux/amd64'」を追記。
 
-## License
+# 4. コンテナを起動する
+./vendor/bin/sail up -d
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# 5. アプリケーションキーを作る
+./vendor/bin/sail artisan key:generate
+
+# 6. テーブルを作り、初期データを入れる
+./vendor/bin/sail artisan migrate --seed
+```
+
+起動後、ブラウザで http://localhost にアクセスしてください。
+phpMyAdminは　http://localhost:8080 にアクセスしてください。
+
+### テスト用アカウント
+
+<!-- TODO: シーダーで作成されるアカウントを記載する -->
+
+| 種別 | メールアドレス | パスワード |
+|---|---|---|
+| 一般ユーザー | user1@example.com | password |
+| 一般ユーザー | user2@example.com | password |
+| 管理者 | user3@example.com | password |
+
+## テスト
+
+```bash
+./vendor/bin/sail artisan test
+```
+
+主に次のテストを書いています。
+
+- API の認証・認可（未認証は 401、他人の勤怠の更新・削除は 403）
+- API の登録・更新・削除と、入力値の検証（422）
+- 月次レポートの集計（合計・平均・遅刻などの回数・他のユーザーのデータが混ざらないこと）
+
+## API 仕様
+
+ベース URL: `http://localhost/api`
+
+### 認証
+
+ログインしてトークンを取得し、以降のリクエストの `Authorization` ヘッダーに付けます。
+
+```bash
+# トークンの取得
+curl -X POST http://localhost/api/login \
+  -H "Accept: application/json" \
+  -d "email=メールアドレス" -d "password=パスワード"
+
+# レスポンス
+# { "token": "1|abcdef..." }
+```
+
+> すべてのリクエストに `Accept: application/json` を付けてください。
+
+### エンドポイント一覧
+
+| メソッド | パス | 内容 | 認証 | 認可 |
+|---|---|---|---|---|
+| GET | `/api/v1/attendance-records` | 勤怠一覧を取得する | 不要 | 不要 |
+| GET | `/api/v1/attendance-records/{id}` | 勤怠詳細を取得する | 不要 | 不要 |
+| POST | `/api/v1/attendance-records` | 勤怠を新規登録する（出勤打刻） | 必須 | なし |
+| PUT | `/api/v1/attendance-records/{id}` | 勤怠を更新する（退勤打刻など） | 必須 | 本人,管理者のみ |
+| DELETE | `/api/v1/attendance-records/{id}` | 勤怠を削除する | 必須 | 本人,管理者のみ |
+
+
+
+### 使用例
+
+```bash
+curl -X POST http://localhost/api/v1/attendance-records \
+  -H "Authorization: Bearer 取得したトークン" \
+  -H "Accept: application/json" \
+  -d "work_date=2026-10-20" \
+  -d "clock_in_at=2026-10-20 09:00:00"
+```
+
+## テーブル設計
+
+### ER図
+
+```mermaid
+erDiagram
+    users ||--o{ attendances : "勤怠を持つ"
+    users ||--o{ attendance_corrections : "修正申請する"
+    attendances ||--o{ proposal_breaks : "休憩を持つ"
+    attendances ||--o{ attendance_corrections : "修正申請される"
+    attendance_corrections ||--o{ proposal_break_corrections : "休憩の修正を持つ"
+    proposal_breaks |o--o{ proposal_break_corrections : "修正元の休憩"
+
+    users {
+        bigint id PK
+        string name
+        string email UK
+        timestamp email_verified_at "NULL可"
+        string password
+        boolean admin_status "管理者か(初期値 false)"
+        string attendance_status "打刻状態(初期値 勤務外)"
+        string remember_token "NULL可"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    attendances {
+        bigint id PK
+        bigint user_id FK "user_id + work_date でユニーク"
+        date work_date "勤務日"
+        datetime clock_in_at "出勤時刻"
+        datetime clock_out_at "退勤時刻(NULL可)"
+        string comment "備考 255文字(NULL可)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    proposal_breaks {
+        bigint id PK
+        bigint attendance_id FK
+        datetime break_start_at "休憩開始"
+        datetime break_end_at "休憩終了(NULL可)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    attendance_corrections {
+        bigint id PK
+        bigint user_id FK
+        bigint attendance_id FK
+        datetime clock_in_at "修正後の出勤(NULL可)"
+        datetime clock_out_at "修正後の退勤(NULL可)"
+        text comment "申請理由"
+        enum approval_status "承認待ち / 承認済み"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    proposal_break_corrections {
+        bigint id PK
+        bigint attendance_correction_id FK
+        bigint proposal_break_id FK "修正元の休憩(NULL可)"
+        datetime break_start_at "修正後の休憩開始(NULL可)"
+        datetime break_end_at "修正後の休憩終了(NULL可)"
+        timestamp created_at
+        timestamp updated_at
+    }
+```
+
+- `user_id` と `work_date` の組み合わせにユニーク制約があり、1 ユーザー 1 日 1 件です。
+
+
+<!-- ## 工夫した点
+
+- **退勤時刻を後から追加できる設計**：実際の打刻の流れ（出勤ボタン → 退勤ボタン）に合わせ、出勤時に勤怠を作成し、退勤時に更新する形にしました。
+- **認可の分離**：Web 画面では管理者が勤怠を直接編集できますが、API は「本人のみ」とし、Policy の `before()` で管理者を素通りさせないようにしています。
+- **エラーレスポンスの統一**：401・403・404 を API の仕様どおりの JSON で返すようにしています。
+- **テストでの検証**：認可の境界（本人・他人・管理者）や、月次レポートの集計を、Factory で作ったデータで確認しています。 -->
