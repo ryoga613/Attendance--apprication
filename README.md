@@ -2,9 +2,7 @@
 
 勤怠管理アプリです。出勤・退勤の打刻、勤怠の修正申請、月次レポートの表示に加えて、外部のシステムやアプリから勤怠を操作できる REST API（Laravel Sanctum 認証）を備えています。
 
-<!-- TODO: スクリーンショットを追加する（例）
-![勤怠打刻画面](docs/images/attendance.png)
--->
+
 
 ## 目次
 
@@ -50,55 +48,63 @@
 
 ## 環境構築
 
-# 1. リポジトリを取得する
-git clone https://github.com/ryoga613/Attendance--apprication.git 
-cd Attendance--apprication
-
-# 2. 環境変数ファイルを作る
+### 1. リポジトリを取得する
+```bash
+    git clone https://github.com/ryoga613/Attendance--apprication.git 
+    cd Attendance--apprication
+```
+### 2. 環境変数ファイルを作る
+```bash
 cp .env.example .env
+```
+### 3. PHPの部品をインストールする
+```bash
+    docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php82-composer:latest \
+    composer install --ignore-platform-reqs
+```
 
-# 3. PHPの部品をインストールする
-docker run --rm \
-  -u "$(id -u):$(id -g)" \
-  -v "$(pwd):/var/www/html" \
-  -w /var/www/html \
-  laravelsail/php82-composer:latest \
-  composer install --ignore-platform-reqs
+### 4. env ファイルを開き、データベース接続情報が以下と一致していることを確認します。
 
+```bash
+    DB_CONNECTION=mysql
+    DB_HOST=mysql
+    DB_PORT=3306
+    DB_DATABASE=laravel
+    DB_USERNAME=sail
+    DB_PASSWORD=password
 
-# 4. env ファイルを開き、データベース接続情報が以下と一致していることを確認します。
+    MAIL_MAILER=smtp
+    MAIL_HOST=mailpit
+    MAIL_PORT=1025
+```
+### 5. コンテナを起動する（MySQLの起動に数十秒かかる）
+```bash
+    ./vendor/bin/sail up -d
+```
+### 6. アプリケーションキーを作る
+```bash
+    ./vendor/bin/sail artisan key:generate
+```
+### 7. テーブルを作り、初期データを入れる
+```bash
+    ./vendor/bin/sail artisan migrate --seed
+```
+### 8. フロントエンドの部品を入れて、起動する
+```bash
+    ./vendor/bin/sail npm install
+    ./vendor/bin/sail npm run dev
+```
 
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=laravel
-DB_USERNAME=sail
-DB_PASSWORD=password
+### 9. アクセス
+```bash
+    http://localhost/login  //ログイン画面
+    http://localhost:8080   //phpmyadmin
 
-MAIL_MAILER=smtp
-MAIL_HOST=mailpit
-MAIL_PORT=1025
-
-# 5. コンテナを起動する（MySQLの起動に数十秒かかる）
-./vendor/bin/sail up -d
-
-# 6. アプリケーションキーを作る
-./vendor/bin/sail artisan key:generate
-
-# 7. テーブルを作り、初期データを入れる
-./vendor/bin/sail artisan migrate --seed
-
-# 8. フロントエンドの部品を入れて、起動する
-./vendor/bin/sail npm install
-./vendor/bin/sail npm run dev
-
-
-# 9. アクセス
-    ```bash
-        http://localhost/login  //ログイン画面
-        http://localhost:8080   //phpmyadmin
-
-    ```
+```
 ## API 仕様
 
 ベース URL: `http://localhost/api`
