@@ -39,136 +39,66 @@
 
 | 区分 | 内容 |
 |---|---|
-| 言語 | PHP |
-| フレームワーク | Laravel |
+| 言語 | PHP 8.2 |
+| フレームワーク | Laravel 10.x|
 | データベース | MySQL |
 | 開発環境 | Docker（Laravel Sail） |
 | API 認証 | Laravel Sanctum（トークン認証） |
 | テスト | PHPUnit（Laravel の Feature テスト） |
 | バージョン管理 | Git / GitHub |
 
-<!-- TODO: PHP と Laravel のバージョンを記載する（例: PHP 8.3 / Laravel 10.x） -->
 
 ## 環境構築
 
-`1. **リポジトリをクローン**
+# 1. リポジトリを取得する
+git clone https://github.com/ryoga613/Attendance--apprication.git 
+cd Attendance--apprication
 
+# 2. 環境変数ファイルを作る
+cp .env.example .env
+
+# 3. PHPの部品をインストールする
+docker run --rm \
+  -u "$(id -u):$(id -g)" \
+  -v "$(pwd):/var/www/html" \
+  -w /var/www/html \
+  laravelsail/php82-composer:latest \
+  composer install --ignore-platform-reqs
+
+
+# 4. env ファイルを開き、データベース接続情報が以下と一致していることを確認します。
+
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=laravel
+DB_USERNAME=sail
+DB_PASSWORD=password
+
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit
+MAIL_PORT=1025
+
+# 5. コンテナを起動する（MySQLの起動に数十秒かかる）
+./vendor/bin/sail up -d
+
+# 6. アプリケーションキーを作る
+./vendor/bin/sail artisan key:generate
+
+# 7. テーブルを作り、初期データを入れる
+./vendor/bin/sail artisan migrate --seed
+
+# 8. フロントエンドの部品を入れて、起動する
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run dev
+
+
+# 9. アクセス
     ```bash
-        git clone https://github.com/ryoga613/Attendance--apprication 
+        http://localhost/login  //ログイン画面
+        http://localhost:8080   //phpmyadmin
+
     ```
-
-2. **.envファイルの準備**
-
-    `.env.example` をコピーして `.env` を作成します。
-
-    ```bash
-    cp .env.example .env
-    ```
-
-    `.env` ファイル内の以下のDB接続情報を確認・設定します。`.env.example` のデフォルト値はSail向けではないため、以下のように変更してください。
-
-    ```ini
-    DB_CONNECTION=mysql
-    DB_HOST=mysql
-    DB_PORT=3306
-    DB_DATABASE=laravel
-    DB_USERNAME=sail
-    DB_PASSWORD=password
-    ```
-
-3. **Composer依存パッケージのインストール**
-
-    プロジェクトの初回セットアップ時は、`vendor` ディレクトリが存在しないため `sail` コマンドを使用できません。
-    以下のDockerコマンドを実行して、コンテナ内で `composer install` を実行します。
-
-    ```bash
-    docker run --rm \
-        -u "$(id -u):$(id -g)" \
-        -v "$(pwd):/var/www/html" \
-        -w /var/www/html \
-        laravelsail/php82-composer:latest \
-        composer install --ignore-platform-reqs
-    ```
-
-4. **Laravel Sailの起動**
-
-    以下のコマンドでDockerコンテナを起動します。
-
-    ```bash
-    ./vendor/bin/sail up -d
-    ```
-
-    > **エイリアスの設定（推奨）**
-    >
-    > 毎回 `./vendor/bin/sail` と入力するのは手間なので、エイリアスを設定すると便利です。
-    >
-    > ```bash
-    > alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'
-    > ```
-
-5. **アプリケーションキーの生成**
-
-    ```bash
-    sail artisan key:generate
-    ```
-
-6. **データベースのマイグレーションと初期データ投入**
-
-    以下のコマンドでテーブルを作成し、ダミーデータを投入します。
-
-    ```bash
-    sail artisan migrate:fresh --seed
-    ```
-    このコマンドの入力後、下記のエラーが表示されることがあります。
-    ```bash
-       Illuminate\Database\QueryException 
-      SQLSTATE[HY000] [1044] Access denied for user 'sail'@'%' to database 'bookshelf-app' (Connection: mysql, SQL: select table_name as `name`,         (data_length + index_length) as `size`, table_comment as `comment`, engine as `engine`, table_collation as `collation` from information_schema.tables where table_schema = 'bookshelf-app' and table_type in ('BASE TABLE', 'SYSTEM VERSIONED') order by table_name)
-
-      at vendor/laravel/framework/src/Illuminate/Database/Connection.php:829
-        825▕                     $this->getName(), $query, $this->prepareBindings($bindings), $e
-        826▕                 );
-        827▕             }
-        828▕ 
-      ➜ 829▕             throw new QueryException(
-        830▕                 $this->getName(), $query, $this->prepareBindings($bindings), $e
-        831▕             );
-        832▕         }
-        833▕     }
-
-      +43 vendor frames 
-
-      44  artisan:35
-          Illuminate\Foundation\Console\Kernel::handle()
-    ```
-    このエラーはコンテナ内にデータが残っており、エラーが生じているケースなどがあります。
-    その場合は、以下のコマンドを順に実行して各コンテナを再起動して下さい。
-    ```Bash
-    sail down -v
-    sail up -d　//コマンド実行後にSQLコンテナが立ち上がるまで時間がかかります。30秒ほどお待ちください。
-    sail artisan migrate:fresh --seed
-    ```
-    
-
-7. **フロントエンドのビルド**
-
-    ```bash
-    sail npm install
-    sail npm install alpinejs
-    sail npm run dev
-    ```
-
-    `npm run dev` は開発中は起動したままにしてください。
-
-8. **アプリケーションへのアクセス**
-
-    ブラウザで [http://localhost](http://localhost) にアクセスします。
-
-主に次のテストを書いています。
-
-- API の認証・認可（未認証は 401、他人の勤怠の更新・削除は 403）
-- API の登録・更新・削除と、入力値の検証（422）
-- 月次レポートの集計（合計・平均・遅刻などの回数・他のユーザーのデータが混ざらないこと）
-
 ## API 仕様
 
 ベース URL: `http://localhost/api`
