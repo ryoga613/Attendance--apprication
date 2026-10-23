@@ -51,50 +51,117 @@
 
 ## 環境構築
 
-```bash
-# 1. リポジトリを取得する（フォルダ名を attendance-app にする）
-git clone https://github.com/ryoga613/Attendance--apprication.git attendance-app
-cd attendance-app
+`1. **リポジトリをクローン**
 
-# 2. 環境変数ファイルを作る
-cp .env.example .env
+    ```bash
+        git clone https://github.com/ryoga613/Attendance--apprication 
+    ```
 
-# 3. 依存パッケージをインストールする
-docker run --rm \
-  -u "$(id -u):$(id -g)" \
-  -v "$(pwd):/var/www/html" \
-  -w /var/www/html \
-  laravelsail/php82-composer:latest \
-  composer install --ignore-platform-reqs
+2. **.envファイルの準備**
 
-# 4. コンテナを起動する
-./vendor/bin/sail up -d
+    `.env.example` をコピーして `.env` を作成します。
 
-# 5. アプリケーションキーを作る
-./vendor/bin/sail artisan key:generate
+    ```bash
+    cp .env.example .env
+    ```
 
-# 6. テーブルを作り、初期データを入れる（MySQLの起動に数十秒かかるので、失敗したら少し待って再実行）
-./vendor/bin/sail artisan migrate --seed
+    `.env` ファイル内の以下のDB接続情報を確認・設定します。`.env.example` のデフォルト値はSail向けではないため、以下のように変更してください。
 
+    ```ini
+    DB_CONNECTION=mysql
+    DB_HOST=mysql
+    DB_PORT=3306
+    DB_DATABASE=laravel
+    DB_USERNAME=sail
+    DB_PASSWORD=password
+    ```
 
-起動後、ブラウザで http://localhost にアクセスしてください。
-phpMyAdminは　http://localhost:8080 にアクセスしてください。
+3. **Composer依存パッケージのインストール**
 
-### テスト用アカウント
+    プロジェクトの初回セットアップ時は、`vendor` ディレクトリが存在しないため `sail` コマンドを使用できません。
+    以下のDockerコマンドを実行して、コンテナ内で `composer install` を実行します。
 
-<!-- TODO: シーダーで作成されるアカウントを記載する -->
+    ```bash
+    docker run --rm \
+        -u "$(id -u):$(id -g)" \
+        -v "$(pwd):/var/www/html" \
+        -w /var/www/html \
+        laravelsail/php82-composer:latest \
+        composer install --ignore-platform-reqs
+    ```
 
-| 種別 | メールアドレス | パスワード |
-|---|---|---|
-| 一般ユーザー | user1@example.com | password |
-| 一般ユーザー | user2@example.com | password |
-| 管理者 | user3@example.com | password |
+4. **Laravel Sailの起動**
 
-## テスト
+    以下のコマンドでDockerコンテナを起動します。
 
-```bash
-./vendor/bin/sail artisan test
-```
+    ```bash
+    ./vendor/bin/sail up -d
+    ```
+
+    > **エイリアスの設定（推奨）**
+    >
+    > 毎回 `./vendor/bin/sail` と入力するのは手間なので、エイリアスを設定すると便利です。
+    >
+    > ```bash
+    > alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'
+    > ```
+
+5. **アプリケーションキーの生成**
+
+    ```bash
+    sail artisan key:generate
+    ```
+
+6. **データベースのマイグレーションと初期データ投入**
+
+    以下のコマンドでテーブルを作成し、ダミーデータを投入します。
+
+    ```bash
+    sail artisan migrate:fresh --seed
+    ```
+    このコマンドの入力後、下記のエラーが表示されることがあります。
+    ```bash
+       Illuminate\Database\QueryException 
+      SQLSTATE[HY000] [1044] Access denied for user 'sail'@'%' to database 'bookshelf-app' (Connection: mysql, SQL: select table_name as `name`,         (data_length + index_length) as `size`, table_comment as `comment`, engine as `engine`, table_collation as `collation` from information_schema.tables where table_schema = 'bookshelf-app' and table_type in ('BASE TABLE', 'SYSTEM VERSIONED') order by table_name)
+
+      at vendor/laravel/framework/src/Illuminate/Database/Connection.php:829
+        825▕                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+        826▕                 );
+        827▕             }
+        828▕ 
+      ➜ 829▕             throw new QueryException(
+        830▕                 $this->getName(), $query, $this->prepareBindings($bindings), $e
+        831▕             );
+        832▕         }
+        833▕     }
+
+      +43 vendor frames 
+
+      44  artisan:35
+          Illuminate\Foundation\Console\Kernel::handle()
+    ```
+    このエラーはコンテナ内にデータが残っており、エラーが生じているケースなどがあります。
+    その場合は、以下のコマンドを順に実行して各コンテナを再起動して下さい。
+    ```Bash
+    sail down -v
+    sail up -d　//コマンド実行後にSQLコンテナが立ち上がるまで時間がかかります。30秒ほどお待ちください。
+    sail artisan migrate:fresh --seed
+    ```
+    
+
+7. **フロントエンドのビルド**
+
+    ```bash
+    sail npm install
+    sail npm install alpinejs
+    sail npm run dev
+    ```
+
+    `npm run dev` は開発中は起動したままにしてください。
+
+8. **アプリケーションへのアクセス**
+
+    ブラウザで [http://localhost](http://localhost) にアクセスします。
 
 主に次のテストを書いています。
 
