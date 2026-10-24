@@ -9,11 +9,10 @@ class AttendancePolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if (str_starts_with($ability, 'api')) {
-            return null;
+        if($user->admin_status){
+            return true;
         }
-
-        return $user->admin_status ? true : null;
+       return null ; 
     }
 
     public function store()
@@ -21,7 +20,6 @@ class AttendancePolicy
         return true;
     }
 
-    // AttendancePolicy に追加(管理者は before() で許可されるので、一般ユーザーだけ拒否になる)
     public function manage(User $user): bool
     {
         return false;
