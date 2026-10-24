@@ -91,7 +91,7 @@ cp .env.example .env
 ```
 ### 7. テーブルを作り、初期データを入れる
 ```bash
-    ./vendor/bin/sail artisan migrate --seed
+    ./vendor/bin/sail artisan migrate:fresh --seed
 ```
 ### 8. フロントエンドの部品を入れて、起動する
 ```bash
