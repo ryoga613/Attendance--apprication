@@ -9,10 +9,11 @@ class AttendancePolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        if($user->admin_status){
+        if ($user->admin_status) {
             return true;
         }
-       return null ; 
+
+        return null;
     }
 
     public function store()
