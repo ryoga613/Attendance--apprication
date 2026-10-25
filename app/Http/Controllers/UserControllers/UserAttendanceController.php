@@ -132,7 +132,7 @@ class UserAttendanceController extends Controller
 
     private function clockIn($user)
     {
-        if ($user->attendance_status()->value !== '勤務外') {
+        if ($user->attendance_status->value !== '勤務外') {
             return redirect()->route('attendance.register.form');
         }
         Attendance::create([

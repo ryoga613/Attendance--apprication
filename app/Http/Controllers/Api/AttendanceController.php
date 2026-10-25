@@ -8,7 +8,6 @@ use App\Http\Requests\Api\StoreAttendanceRequest;
 use App\Http\Requests\Api\UpdateAttendanceRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
-use App\Policies\AttendancePolicy;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -50,7 +49,7 @@ class AttendanceController extends Controller
 
         Gate::authorize('view', $attendance);
 
-        $attendance->load(['user', 'breaks', 'applications']);
+        $attendance->load(['user', 'breaks', 'attendanceCorrections']);
 
         return new AttendanceResource($attendance);
     }
@@ -58,12 +57,12 @@ class AttendanceController extends Controller
     // 新規登録する
     public function store(StoreAttendanceRequest $request)
     {
-        Gate::authorize('store', AttendancePolicy::class);
+        Gate::authorize('store', Attendance::class);
 
         $validated = $request->validated();
 
         $attendanceRecord = $request->user()
-            ->attendanceRecords()
+            ->attendances()
             ->create($validated);
 
         $attendanceRecord->load(['user', 'breaks']);
@@ -95,7 +94,7 @@ class AttendanceController extends Controller
     // 削除する
     public function destroy(Attendance $attendanceRecord)
     {
-        
+
         if (Gate::denies('apiDelete', $attendanceRecord)) {
             return response()->json([
                 'error' => 'この操作を実行する権限がありません。',
