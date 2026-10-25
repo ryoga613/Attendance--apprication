@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\API\IndexAttendanceRequest;
 use App\Http\Requests\Api\StoreAttendanceRequest;
 use App\Http\Requests\Api\UpdateAttendanceRequest;
+use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
+use App\Policies\AttendancePolicy;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class AttendanceController extends Controller
@@ -14,13 +18,22 @@ class AttendanceController extends Controller
     use AuthorizesRequests;
 
     // 一覧を取得する
-    public function index()
+    public function index(IndexAttendanceRequest $request)
     {
         Gate::authorize('viewAny', Attendance::class);
 
-        $attendances = Attendance::orderByDesc('work_date')->get();
+        $perPage = $request->per_page;
 
-        return response()->json($attendances);
+        $user = Auth::user();
+
+        $date = $request->date;
+
+        $attendanceRecord_records = Attendance::latest()
+            ->where('user_id', $user->id)
+            ->where('work_date', $date)
+            ->paginate($perPage);
+
+        return AttendanceResource::collection($attendanceRecord_records);
     }
 
     // 詳細を取得する
@@ -28,7 +41,6 @@ class AttendanceController extends Controller
     {
 
         $attendance = Attendance::find($id);
-        Gate::authorize('view', $attendance);
 
         if (! $attendance) {
             return response()->json([
@@ -36,31 +48,35 @@ class AttendanceController extends Controller
             ], 404);
         }
 
-        return response()->json($attendance);
+        Gate::authorize('view', $attendance);
+
+        $attendance->load(['user', 'breaks', 'applications']);
+
+        return new AttendanceResource($attendance);
     }
 
     // 新規登録する
     public function store(StoreAttendanceRequest $request)
     {
-
-        Gate::authorize('store', Attendance::class);
+        Gate::authorize('store', AttendancePolicy::class);
 
         $validated = $request->validated();
 
-        // user_id はログイン中のユーザーから自動で入れる
-        $user = $request->user();
-        $validated['user_id'] = $user->id;
+        $attendanceRecord = $request->user()
+            ->attendanceRecords()
+            ->create($validated);
 
-        $attendance = Attendance::create($validated);
+        $attendanceRecord->load(['user', 'breaks']);
 
-        return response()->json($attendance, 201);
+        return (new AttendanceResource($attendanceRecord))
+            ->response()
+            ->setStatusCode(201);
     }
 
     // 更新する
     public function update(UpdateAttendanceRequest $request, Attendance $attendanceRecord)
     {
-        // 本人かどうかをPolicyでチェック（違えば403）
-        // $this->authorize('apiUpdate', $attendanceRecord);
+
         if (Gate::denies('apiUpdate', $attendanceRecord)) {
             return response()->json([
                 'error' => 'この操作を実行する権限がありません。',
@@ -71,15 +87,16 @@ class AttendanceController extends Controller
 
         $attendanceRecord->update($validated);
 
-        return response()->json($attendanceRecord);
+        $attendanceRecord->load(['user', 'breaks']);
+
+        return new AttendanceResource($attendanceRecord);
     }
 
     // 削除する
     public function destroy(Attendance $attendanceRecord)
     {
-        // 本人かどうかをPolicyでチェック（違えば403）
-        // $this->authorize('apiDelete', $attendanceRecord);
-        if (Gate::denies('apiUpdate', $attendanceRecord)) {
+        
+        if (Gate::denies('apiDelete', $attendanceRecord)) {
             return response()->json([
                 'error' => 'この操作を実行する権限がありません。',
             ], 403);
