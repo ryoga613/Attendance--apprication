@@ -7,36 +7,40 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class AttendanceRecordTest extends TestCase
+class ApiAttendanceRecordTest extends TestCase
 {
     /**
      * A basic feature test example.
      */
     use RefreshDatabase;
 
-    public function test_ap_iで勤怠一覧が取得できる(): void
+    public function test_apiで勤怠一覧に自分の勤怠だけが表示される(): void
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
 
+        // 自分の勤怠
         $attendance1 = Attendance::factory()->create([
             'user_id' => $user1->id,
             'work_date' => '2026-10-19',
         ]);
+
+        // 他人の勤怠（同じ日付）
         $attendance2 = Attendance::factory()->create([
             'user_id' => $user2->id,
-            'work_date' => '2026-10-20',
+            'work_date' => '2026-10-19',
         ]);
 
-        $response = $this->get('/api/v1/attendance-records');
+        // user1としてログインし、日付を指定して取得
+        $response = $this->actingAs($user1)
+            ->getJson('/api/v1/attendance-records?date=2026-10-19&per_page=20');
 
         $response->assertOk()
-            ->assertJsonCount(2)
             ->assertJsonFragment(['id' => $attendance1->id])
-            ->assertJsonFragment(['id' => $attendance2->id]);
+            ->assertJsonMissing(['id' => $attendance2->id]);
     }
 
-    public function test_ap_iで勤怠詳細ができる(): void
+    public function test_ap_iで勤怠の確認が詳細取得ができる(): void
     {
         $user = User::factory()->create();
 
@@ -45,7 +49,7 @@ class AttendanceRecordTest extends TestCase
             'work_date' => '2026-10-19',
         ]);
 
-        $response = $this->get("/api/v1/attendance-records/{$attendance->id}");
+        $response = $this->actingAs($user)->get("/api/v1/attendance-records/{$attendance->id}");
 
         $response->assertOk()
             ->assertJsonFragment(['id' => $attendance->id]);
@@ -71,6 +75,7 @@ class AttendanceRecordTest extends TestCase
 
     public function test_ap_iで勤怠の登録ができる()
     {
+        $this->withoutExceptionHandling();
         $user = User::factory()->create([
             'email' => 'test@example.com',
             'password' => 'password',
@@ -106,6 +111,7 @@ class AttendanceRecordTest extends TestCase
 
     public function test_ap_iで勤怠の編集ができる(): void
     {
+
         $user = User::factory()->create([
             'email' => 'test@example.com',
             'password' => 'password',

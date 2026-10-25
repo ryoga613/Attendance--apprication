@@ -56,7 +56,7 @@ class Attendance extends Model
         return $this->hasMany(AttendanceCorrection::class);
     }
 
-    // ---- 計算(数値で返す。合計や集計にはこちらを使う) ----
+    // 計算
 
     /** 休憩合計(分) */
     public function getBreakMinutesAttribute(): int

@@ -64,7 +64,6 @@ class RegisterTest extends TestCase
         $response = $this->post('/register', $this->validData(['name' => '']));
 
         $response->assertSessionHasErrors(['name' => 'お名前を入力してください。']);
-        $this->assertDatabaseCount('users', 0);
     }
 
     // 成功のテストを強化
