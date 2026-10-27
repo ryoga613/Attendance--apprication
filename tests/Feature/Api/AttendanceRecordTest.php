@@ -40,8 +40,8 @@ class ApiAttendanceRecordTest extends TestCase
             ->assertJsonMissing(['id' => $attendance2->id]);
     }
 
-    public function test_ap_iで勤怠の確認が詳細取得ができる(): void
-    {
+    public function test_ap_iで勤怠の詳細が取得できる(): void
+    {         
         $user = User::factory()->create();
 
         $attendance = Attendance::factory()->create([
