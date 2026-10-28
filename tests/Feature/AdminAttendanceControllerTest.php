@@ -131,4 +131,45 @@ class AdminAttendanceControllerTest extends TestCase
         ]);
 
     }
+
+    public function test_未退勤の勤務詳細も見れる()
+    {
+        $attendance = Attendance::factory()->create([
+            'clock_in_at' => now()->setTime(9, 0),
+            'clock_out_at' => null,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')->get("admin/attendance/{$attendance->id}");
+
+        $response->assertStatus(200);
+        $this->assertNull($response->viewData('attendanceRecord')['clock_out']);
+    }
+
+    public function test_勤怠がない月でもスタッフの勤怠一覧が見れる()
+    {
+        $user = User::where('name', '当日さん')->first();
+
+        $response = $this->actingAs($this->admin, 'admin')->get("admin/attendance/staff/{$user->id}?date=2026-08");
+
+        $response->assertStatus(200);
+        $response->assertViewHas('formattedAttendanceRecords', fn ($records) => $records->isEmpty());
+        $response->assertViewHas('previousMonth', '2026-07');
+        $response->assertViewHas('nextMonth', '2026-09');
+    }
+
+    public function test_スタッフの勤怠一覧に別の年の同じ月が混ざらない()
+    {
+        $user = User::where('name', '当日さん')->first();
+        Attendance::create([
+            'user_id' => $user->id,
+            'work_date' => '2025-10-16',
+            'clock_in_at' => '2025-10-16 09:00:00',
+            'clock_out_at' => '2025-10-16 18:00:00',
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')->get("admin/attendance/staff/{$user->id}?date=2026-10");
+
+        $response->assertViewHas('formattedAttendanceRecords', fn ($records) => $records->count() === 1
+            && $records->first()['date']->format('Y-m-d') === '2026-10-16');
+    }
 }

@@ -44,8 +44,8 @@ class AdminAttendanceController extends Controller
             'id' => $attendance->id,
             'year' => $attendance->year,
             'date' => (string) $attendance->date->locale('ja')->translatedFormat('n/j(D)'),
-            'clock_in' => $attendance->clock_in_at->format('H:i'),
-            'clock_out' => $attendance->clock_out_at->format('H:i'),
+            'clock_in' => $attendance->clock_in_at?->format('H:i'),
+            'clock_out' => $attendance->clock_out_at?->format('H:i'),
             'breaks' => $attendance->breaks->map(fn ($b) => [
                 'break_in' => $b->break_start_at?->format('H:i'),
                 'break_out' => $b->break_end_at?->format('H:i'),
@@ -71,9 +71,17 @@ class AdminAttendanceController extends Controller
         Gate::authorize('manage', Attendance::class);
 
         $user = User::findOrFail($id);
-        $attendanceRecords = Attendance::with('breaks')->where('user_id', $id)->whereMonth('work_date', request()->get('month', now()->month))->get();
 
-        $date = $attendanceRecords->first()->work_date;
+        $date = request()->query('date')
+            ? Carbon::createFromFormat('!Y-m', request()->query('date'))
+            : now()->startOfMonth();
+
+        $attendanceRecords = Attendance::with('breaks')
+            ->where('user_id', $id)
+            ->whereYear('work_date', $date->year)
+            ->whereMonth('work_date', $date->month)
+            ->orderBy('work_date')
+            ->get();
 
         $formattedAttendanceRecords = $attendanceRecords->map(function ($record) {
             return [
@@ -87,8 +95,8 @@ class AdminAttendanceController extends Controller
                 'total_time' => $record->total_time,
             ];
         });
-        $previousMonth = $date->copy()->subMonth();
-        $nextMonth = $date->copy()->addMonth();
+        $previousMonth = $date->copy()->subMonth()->format('Y-m');
+        $nextMonth = $date->copy()->addMonth()->format('Y-m');
 
         return view('admin.staff-attendance-list', compact('user', 'attendanceRecords', 'date', 'formattedAttendanceRecords', 'previousMonth', 'nextMonth'));
     }
