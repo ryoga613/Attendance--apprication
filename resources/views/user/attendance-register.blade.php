@@ -8,6 +8,18 @@
 <div class="attendance__content">
     {{-- 見出し階層を h1 から開始するためのページ見出し（Figmaに表示タイトルが無いため視覚的には非表示） --}}
     <h1 class="attendance__heading">勤怠登録</h1>
+    @if ($unfinishedAttendances->isNotEmpty())
+    <div class="attendance__notice">
+        <p class="attendance__notice--text">退勤の打刻がない勤怠があります。修正申請をしてください。</p>
+        <ul class="attendance__notice--list">
+            @foreach ($unfinishedAttendances as $unfinished)
+            <li>
+                <a class="attendance__notice--link" href="{{ route('attendance.detail', $unfinished->id) }}">{{ $unfinished->work_date->locale('ja')->translatedFormat('n月j日（D）') }}</a>
+            </li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
     <div class="attendance__status">
         <p class="attendance__status--item">{{ $status }}</p>
     </div>

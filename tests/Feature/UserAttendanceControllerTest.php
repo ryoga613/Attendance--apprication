@@ -329,4 +329,41 @@ class UserAttendanceControllerTest extends TestCase
             ->get('/application/'.$correction->id)
             ->assertStatus(403);
     }
+
+    public function test_退勤し忘れた過去の勤怠があると打刻画面で知らせる()
+    {
+        Carbon::setTestNow('2026-10-17 09:00:00');
+
+        $user = $this->createUser();
+        // 前日は退勤し忘れ、2日前は退勤済み
+        $unfinished = $this->makeAttendance($user, ['clock_out_at' => null]);
+        $this->makeAttendance($user, [
+            'work_date' => '2026-10-15',
+            'clock_in_at' => '2026-10-15 09:00:00',
+            'clock_out_at' => '2026-10-15 18:00:00',
+        ]);
+
+        $this->actingAs($user)->get('/attendance')
+            ->assertSee('退勤の打刻がない勤怠があります')
+            ->assertSee(route('attendance.detail', $unfinished->id))
+            ->assertViewHas('unfinishedAttendances', fn ($records) => $records->pluck('id')->all() === [$unfinished->id]);
+    }
+
+    public function test_修正申請中や当日の未退勤の勤怠は知らせない()
+    {
+        Carbon::setTestNow('2026-10-17 10:00:00');
+
+        $user = $this->createUser();
+        // 前日の退勤し忘れは修正申請中
+        $this->makeCorrection($user, '承認待ち')->AttendanceRecord->update(['clock_out_at' => null]);
+        // 当日は出勤中
+        $this->makeAttendance($user, [
+            'work_date' => '2026-10-17',
+            'clock_in_at' => '2026-10-17 09:00:00',
+            'clock_out_at' => null,
+        ]);
+
+        $this->actingAs($user)->get('/attendance')
+            ->assertDontSee('退勤の打刻がない勤怠があります');
+    }
 }
