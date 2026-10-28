@@ -180,4 +180,41 @@ class AdminAttendanceControllerTest extends TestCase
         $response->assertViewHas('users', fn ($users) => $users->doesntContain('id', $this->admin->id)
             && $users->contains('name', '当日さん'));
     }
+
+    public function test_スタッフの月の勤怠を_cs_vで出力できる()
+    {
+        $user = User::where('name', '当日さん')->first();
+        $attendance = Attendance::where('user_id', $user->id)->first();
+        ProposalBreak::create([
+            'attendance_id' => $attendance->id,
+            'break_start_at' => '2026-10-16 12:00:00',
+            'break_end_at' => '2026-10-16 13:00:00',
+        ]);
+        // 別の月の勤怠は出力されない
+        Attendance::create([
+            'user_id' => $user->id,
+            'work_date' => '2026-09-01',
+            'clock_in_at' => '2026-09-01 09:00:00',
+            'clock_out_at' => '2026-09-01 18:00:00',
+        ]);
+
+        $response = $this->actingAs($this->admin, 'admin')->post('/export', [
+            'user_id' => $user->id,
+            'year_month' => '2026-10',
+        ]);
+
+        $response->assertOk();
+        $response->assertDownload("attendance_{$user->id}_2026-10.csv");
+
+        $lines = explode("\n", trim(str_replace("\xEF\xBB\xBF", '', $response->streamedContent())));
+        $this->assertSame(['日付,出勤,退勤,休憩,合計', '2026/10/16,09:00,18:00,01:00,08:00'], $lines);
+    }
+
+    public function test_一般ユーザーは_cs_vを出力できない()
+    {
+        $user = User::where('name', '当日さん')->first();
+
+        $this->actingAs($user)->post('/export', ['user_id' => $user->id, 'year_month' => '2026-10'])
+            ->assertRedirect(route('login'));
+    }
 }
