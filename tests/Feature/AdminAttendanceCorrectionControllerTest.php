@@ -190,6 +190,7 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
 
         // 休憩IDをProposalBreakCorrectionのIDと確実にずらす
         $breakCorrection = $correction->proposalBreaks->first();
+        $breakCorrection->delete();
         $this->break->delete();
         $this->break = ProposalBreak::forceCreate([
             'id' => $breakCorrection->id + 1000,
@@ -275,5 +276,32 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         $response = $this->actingAs($this->staff)->get('/stamp_correction_request/approve/'.$correction->id);
 
         $response->assertRedirect(route('login'));
+    }
+
+    /** 承認で休憩が削除されても、過去の申請の休憩は履歴として残る */
+    public function test_休憩が削除されても過去の申請の休憩は残る()
+    {
+        // 過去に承認済みの申請(12:30-13:30の休憩を含む)
+        $oldCorrection = $this->makeCorrection();
+        $oldCorrection->update(['approval_status' => '承認済み']);
+        $oldBreakCorrection = $oldCorrection->proposalBreaks->first();
+
+        // 休憩をすべて取り消す申請を承認する
+        $correction = AttendanceCorrection::create([
+            'user_id' => $this->staff->id,
+            'attendance_id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 09:00:00',
+            'clock_out_at' => '2026-10-16 18:00:00',
+            'approval_status' => '承認待ち',
+            'comment' => '休憩なし',
+        ]);
+        $this->asAdmin()->post('/stamp_correction_request/approve/'.$correction->id);
+
+        $this->assertDatabaseMissing('proposal_breaks', ['id' => $this->break->id]);
+        $this->assertDatabaseHas('proposal_break_corrections', [
+            'id' => $oldBreakCorrection->id,
+            'proposal_break_id' => null,
+            'break_start_at' => '2026-10-16 12:30:00',
+        ]);
     }
 }
