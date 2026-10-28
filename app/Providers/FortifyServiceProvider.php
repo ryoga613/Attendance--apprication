@@ -48,11 +48,8 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
-        Fortify::loginView(function (Request $request) {
-            if ($request->is('admin/login')) {
-                return view('admin.admin-login');
-            }
-
+        // 管理者のログインはAdminLoginControllerで扱う
+        Fortify::loginView(function () {
             return view('user.user-login');
         });
 

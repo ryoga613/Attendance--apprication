@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm']);
-Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login');
+Route::post('/admin/login', [AdminLoginController::class, 'login'])->middleware('throttle:login')->name('admin.login');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -38,8 +38,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 });
 
-// 管理者ミドルウェア
-Route::middleware(['auth:admin'])->group(function () {
+// 管理者ミドルウェア(ログイン後に管理者権限を外された場合も弾く)
+Route::middleware(['auth:admin', 'admin'])->group(function () {
 
     Route::get('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminAttendanceCorrectionController::class, 'approveStampCorrectionRequest'])->name('stamp_correction_request.approve');
     Route::post('/stamp_correction_request/approve/{attendance_correct_request_id}', [AdminAttendanceCorrectionController::class, 'updateStampCorrectionRequest'])->name('admin.stamp_correction_request.approve');

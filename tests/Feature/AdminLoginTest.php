@@ -90,4 +90,24 @@ class AdminLoginTest extends TestCase
         $response->assertSessionMissing('keep');
         $this->assertGuest('admin');
     }
+
+    public function test_管理者権限を外されたユーザーは管理画面に入れない()
+    {
+        $admin = User::where('email', 'admin@example.com')->first();
+        $this->actingAs($admin, 'admin');
+
+        $admin->update(['admin_status' => false]);
+
+        $this->get('/admin/attendance/list')->assertStatus(403);
+    }
+
+    public function test_管理者ログインに続けて失敗すると試行回数が制限される()
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/admin/login', ['email' => 'admin@example.com', 'password' => 'wrong']);
+        }
+
+        $this->post('/admin/login', ['email' => 'admin@example.com', 'password' => 'wrong'])
+            ->assertStatus(429);
+    }
 }
