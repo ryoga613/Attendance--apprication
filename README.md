@@ -135,6 +135,16 @@ curl -X POST http://localhost/api/login \
 | PUT | `/api/v1/attendance-records/{id}` | 勤怠を更新する（退勤打刻など） | 必須 | 本人,管理者のみ |
 | DELETE | `/api/v1/attendance-records/{id}` | 勤怠を削除する | 必須 | 本人,管理者のみ |
 
+一覧取得のクエリパラメータ（すべて任意。指定しない場合は全員分の勤怠を返す）
+
+| パラメータ | 形式 | 内容 |
+|---|---|---|
+| `user_id` | 整数 | ユーザーで絞り込む |
+| `date` | `Y-m-d` | 勤務日で絞り込む |
+| `month` | `Y-m` | 勤務月で絞り込む |
+| `per_page` | 1〜100 | 1ページの件数（既定 20） |
+| `page` | 整数 | ページ番号 |
+
 
 
 ### 使用例
