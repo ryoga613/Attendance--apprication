@@ -6,7 +6,8 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-class StoreAttendanceCorrectionRequest extends FormRequest
+// 勤怠の修正(一般ユーザーの修正申請・管理者の直接修正)で共通の入力チェック
+class AttendanceCorrectionRequest extends FormRequest
 {
     private const TIME_FORMAT = 'H:i';
 
@@ -22,7 +23,6 @@ class StoreAttendanceCorrectionRequest extends FormRequest
             'new_break_out' => ['nullable', 'array'],
             'new_break_out.*' => ['nullable',  'required_with:new_break_in.*', $time],
             'comment' => ['required', 'string', 'max:1000'],
-            'breaks.*.new_break_out' => ['required', $time],
         ];
     }
 
