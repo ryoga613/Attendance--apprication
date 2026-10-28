@@ -28,7 +28,6 @@ class Attendance extends Model
 
     public const LONG_WORK_TIME_MINUTES = 10 * 60; // 長時間労働 10時間
 
-    // $fillable など、既存の設定はそのまま残してください
     protected $casts = [
         'work_date' => 'date',
         'clock_in_at' => 'datetime',

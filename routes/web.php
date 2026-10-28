@@ -34,7 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attendance/{id}', [UserAttendanceCorrectionController::class, 'store'])->name('attendanceCorrection.store');
     Route::get('/application/{id}', [UserAttendanceController::class, 'detail'])->name('application.show');
 
-    Route::post('/logout', [LogoutController::class, 'UserLogout'])->name('user.logout');
+    Route::post('/logout', [LogoutController::class, 'userLogout'])->name('user.logout');
 
 });
 

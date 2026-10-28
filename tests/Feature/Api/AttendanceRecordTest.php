@@ -40,7 +40,7 @@ class ApiAttendanceRecordTest extends TestCase
     }
 
     public function test_ap_iで勤怠の詳細が取得できる(): void
-    {         
+    {
         $user = User::factory()->create();
 
         $attendance = Attendance::factory()->create([

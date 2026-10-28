@@ -50,8 +50,6 @@ class UserAttendanceCorrectionController extends Controller
             && $attendance->clock_out_at?->format('H:i') === Carbon::parse($validated['new_clock_out'])->format('H:i')
             && $originalBreaks === $newBreaks;
 
-        // dd($noChange);
-
         if ($noChange) {
             return redirect()
                 ->back() // または route('attendance.detail', $id)
@@ -59,7 +57,6 @@ class UserAttendanceCorrectionController extends Controller
                 ->withErrors(['comment' => '変更がありません']);
         }
 
-        // 4. 不要な丸括弧を削除
         $correction = AttendanceCorrection::create([
             'user_id' => $user->id,
             'attendance_id' => $attendance->id,

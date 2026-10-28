@@ -82,29 +82,7 @@ class AdminAttendanceCorrectionController extends Controller
 
     public function approveStampCorrectionRequest($id)
     {
-
-        // $data = Attendance::with('breaks')->findOrFail($id);
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-        // dd($application);
-
-        $breaks = $application->proposalBreaks->map(function ($break) {
-            return [
-                'break_in' => $break->break_start_at,
-                'break_out' => $break->break_end_at,
-            ];
-        });
-
-        $data = ([
-
-            'breaks' => $breaks,
-            'id' => $application->id,
-            'date' => $application->clock_in_at->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $application->clock_in_at->format('Y 年'),
-            'clock_in' => $application->clock_in_at->format('H:i'),
-            'clock_out' => $application->clock_out_at->format('H:i'),
-            'comment' => $application->comment,
-            'application' => $application,
-        ]);
 
         $user = Auth::guard('admin')->user() ?? Auth::user();
 
