@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\AdminControllers;
 
+use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateAttendanceRequest;
 use App\Models\Attendance;
@@ -27,7 +28,7 @@ class AdminAttendanceCorrectionController extends Controller
                 'application_date' => $application->created_at,
                 'clock_in_at' => $application->clock_in_at,
                 'clock_out_at' => $application->clock_out_at,
-                'approval_status' => $application->approval_status,
+                'approval_status' => $application->approval_status->value,
                 'comment' => $application->comment,
             ];
         });
@@ -59,7 +60,7 @@ class AdminAttendanceCorrectionController extends Controller
                 'attendance_id' => $attendance->id,
                 'clock_in_at' => $clockIn,
                 'clock_out_at' => $clockOut,
-                'approval_status' => '承認済み',
+                'approval_status' => ApprovalStatus::APPROVED,
                 'comment' => $request->comment,
             ]);
 
@@ -141,7 +142,7 @@ class AdminAttendanceCorrectionController extends Controller
         $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
         Gate::authorize('approve', $application);
 
-        if ($application->approval_status === '承認済み') {
+        if ($application->approval_status === ApprovalStatus::APPROVED) {
             return redirect()
                 ->route('stamp_correction_request.approve', ['attendance_correct_request_id' => $id])
                 ->withErrors(['approval_status' => 'この申請はすでに承認済みです']);
@@ -173,7 +174,7 @@ class AdminAttendanceCorrectionController extends Controller
                 $break ? $break->update($data) : $attendance->breaks()->create($data);
             }
 
-            $application->update(['approval_status' => '承認済み']);
+            $application->update(['approval_status' => ApprovalStatus::APPROVED]);
         });
 
         return redirect()

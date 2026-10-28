@@ -37,10 +37,10 @@
                     </th>
                 </tr>
                 @foreach ($applications as $application)
-                @if ($application->approval_status === '承認待ち')
+                @if ($application->approval_status === \App\Enums\ApprovalStatus::PENDING)
                 <tr class="table__row">
                     <td class="table__description">
-                        <p class="table__description--item">{{ $application->approval_status }}</p>
+                        <p class="table__description--item">{{ $application->approval_status->value }}</p>
                     </td>
                     <td class="table__description">
                         <p class="table__description--item">{{ $application->user->name }}</p>
@@ -85,10 +85,10 @@
                     </th>
                 </tr>
                 @foreach ($applications as $application)
-                @if ($application->approval_status === '承認済み')
+                @if ($application->approval_status === \App\Enums\ApprovalStatus::APPROVED)
                 <tr class="table__row">
                     <td class="table__description">
-                        <p class="table__description--item">{{ $application->approval_status }}</p>
+                        <p class="table__description--item">{{ $application->approval_status->value }}</p>
                     </td>
                     <td class="table__description">
                         <p class="table__description--item">{{ $application->user->name }}</p>

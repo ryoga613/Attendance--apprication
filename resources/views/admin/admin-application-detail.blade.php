@@ -63,9 +63,9 @@
             </div>
         </div>
         <div class="applied-form__button">
-            @if ($application->approval_status === '承認待ち')
+            @if ($application->approval_status === \App\Enums\ApprovalStatus::PENDING)
             <button class="applied-form__button--submit" type="submit">承認</button>
-            @elseif ($application->approval_status === '承認済み')
+            @elseif ($application->approval_status === \App\Enums\ApprovalStatus::APPROVED)
             <p class="applied-form__item">承認済み</p>
             @endif
         </div>
