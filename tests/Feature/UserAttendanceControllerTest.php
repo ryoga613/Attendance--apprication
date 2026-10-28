@@ -164,13 +164,60 @@ class UserAttendanceControllerTest extends TestCase
         Carbon::setTestNow('2026-10-16 10:00:00');
 
         $user = $this->createUser(['attendance_status' => '出勤中']);
+        $this->makeAttendance($user, ['clock_out_at' => null]);
 
         $this->actingAs($user)->post('/attendance', ['action' => 'clock_in']);
 
         // 他のデータの影響を受けないよう、このユーザーの勤怠だけを確認する
-        $this->assertDatabaseMissing('attendances', [
+        $this->assertSame(1, Attendance::where('user_id', $user->id)->count());
+    }
+
+    public function test_前日に退勤済みでも翌日は出勤できる()
+    {
+        Carbon::setTestNow('2026-10-17 09:00:00');
+
+        // 前日(10/16)に退勤済みで、ステータスも退勤済のまま
+        $user = $this->createUser(['attendance_status' => '退勤済']);
+        $this->makeAttendance($user);
+
+        $this->actingAs($user)->get('/attendance')
+            ->assertViewHas('status', '勤務外');
+
+        $this->actingAs($user)->post('/attendance', ['action' => 'clock_in']);
+
+        $this->assertDatabaseHas('attendances', [
             'user_id' => $user->id,
+            'clock_in_at' => '2026-10-17 09:00:00',
         ]);
+    }
+
+    public function test_出勤前に退勤や休憩を押しても何も起きない()
+    {
+        Carbon::setTestNow('2026-10-16 10:00:00');
+
+        $user = $this->createUser();
+
+        foreach (['clock_out', 'break_in', 'break_out'] as $action) {
+            $this->actingAs($user)->post('/attendance', ['action' => $action])
+                ->assertRedirect(route('attendance.register.form'));
+        }
+
+        $this->assertSame(0, Attendance::where('user_id', $user->id)->count());
+    }
+
+    public function test_休憩中は休憩入と退勤ができない()
+    {
+        Carbon::setTestNow('2026-10-16 10:00:00');
+
+        $user = $this->createUser(['attendance_status' => '休憩中']);
+        $attendance = $this->makeAttendance($user, ['clock_out_at' => null]);
+        $this->makeBreak($attendance, '09:30', null);
+
+        $this->actingAs($user)->post('/attendance', ['action' => 'break_in']);
+        $this->actingAs($user)->post('/attendance', ['action' => 'clock_out']);
+
+        $this->assertSame(1, $attendance->breaks()->count());
+        $this->assertNull($attendance->fresh()->clock_out_at);
     }
 
     public function test_休憩入できる()

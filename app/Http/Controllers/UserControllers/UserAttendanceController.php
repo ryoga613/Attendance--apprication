@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\UserControllers;
 
+use App\Enums\AttendanceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
-use App\Models\ProposalBreak;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -66,15 +66,14 @@ class UserAttendanceController extends Controller
     {
         Gate::authorize('create', Attendance::class);
 
-        $todayAttendance = Attendance::where('user_id', auth()->id())
-            ->whereDate('work_date', Carbon::today())
-            ->first();
-
         $user = auth()->user();
+        $todayAttendance = $this->todayAttendance($user);
+        $status = $this->statusOf($todayAttendance)->value;
+
         $formattedDate = Carbon::now()->locale('ja')->translatedFormat('Y 年 n月 j日（D）');
         $formattedTime = Carbon::now();
 
-        return view('user.attendance-register', compact('todayAttendance', 'user', 'formattedDate', 'formattedTime'));
+        return view('user.attendance-register', compact('todayAttendance', 'user', 'status', 'formattedDate', 'formattedTime'));
     }
 
     public function detail($id)
@@ -119,22 +118,43 @@ class UserAttendanceController extends Controller
         Gate::authorize('store', Attendance::class);
 
         $user = Auth::user();
-        $action = $request->input('action');
+        $attendance = $this->todayAttendance($user);
+        $status = $this->statusOf($attendance);
 
-        return match ($action) {
-            'clock_in' => $this->clockIn($user),
-            'clock_out' => $this->clockOut($user),
-            'break_in' => $this->breakIn($user),
-            'break_out' => $this->breakOut($user),
-            default => redirect()->back($user),
+        // 今の状態で押せないボタンは何もしない(二重送信・古い画面からの送信対策)
+        match ([$request->input('action'), $status]) {
+            ['clock_in', AttendanceStatus::OFF_DUTY] => $this->clockIn($user),
+            ['clock_out', AttendanceStatus::ON_DUTY] => $this->clockOut($user, $attendance),
+            ['break_in', AttendanceStatus::ON_DUTY] => $this->breakIn($user, $attendance),
+            ['break_out', AttendanceStatus::ON_BREAK] => $this->breakOut($user, $attendance),
+            default => null,
+        };
+
+        return redirect()->route('attendance.register.form');
+    }
+
+    // 今日の勤怠
+    private function todayAttendance($user): ?Attendance
+    {
+        return Attendance::with('breaks')
+            ->where('user_id', $user->id)
+            ->whereDate('work_date', Carbon::today())
+            ->first();
+    }
+
+    // 今日の勤怠から打刻の状態を求める(日付が変われば勤務外に戻る)
+    private function statusOf(?Attendance $attendance): AttendanceStatus
+    {
+        return match (true) {
+            ! $attendance => AttendanceStatus::OFF_DUTY,
+            (bool) $attendance->clock_out_at => AttendanceStatus::CLOCKED_OUT,
+            $attendance->breaks->contains(fn ($b) => ! $b->break_end_at) => AttendanceStatus::ON_BREAK,
+            default => AttendanceStatus::ON_DUTY,
         };
     }
 
-    private function clockIn($user)
+    private function clockIn($user): void
     {
-        if ($user->attendance_status !== '勤務外') {
-            return redirect()->route('attendance.register.form');
-        }
         Attendance::create([
             'user_id' => $user->id,
             'work_date' => now()->toDateString(),
@@ -142,63 +162,30 @@ class UserAttendanceController extends Controller
             'clock_out_at' => null,
         ]);
 
-        $user->update([
-            'attendance_status' => '出勤中',
-        ]);
-
-        return redirect()->route('attendance.register.form');
+        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY->value]);
     }
 
-    private function clockOut($user)
+    private function clockOut($user, Attendance $attendance): void
     {
+        $attendance->update(['clock_out_at' => now()]);
 
-        $attendance = Attendance::where('user_id', $user->id)->latest()->first();
-        $attendance->update([
-            'clock_out_at' => now(),
-        ]);
-
-        $user->update([
-            'attendance_status' => '退勤済',
-        ]);
-
-        return redirect()->route('attendance.register.form');
+        $user->update(['attendance_status' => AttendanceStatus::CLOCKED_OUT->value]);
     }
 
-    private function breakIn($user)
+    private function breakIn($user, Attendance $attendance): void
     {
-
-        $attendance = Attendance::where('user_id', $user->id)->latest()->first();
-        $break = [
-            'attendance_id' => $attendance->id,
+        $attendance->breaks()->create([
             'break_start_at' => now(),
             'break_end_at' => null,
-        ];
-
-        ProposalBreak::create($break);
-
-        $user->update([
-            'attendance_status' => '休憩中',
         ]);
 
-        return redirect()->route('attendance.register.form');
+        $user->update(['attendance_status' => AttendanceStatus::ON_BREAK->value]);
     }
 
-    private function breakOut($user)
+    private function breakOut($user, Attendance $attendance): void
     {
+        $attendance->breaks()->whereNull('break_end_at')->update(['break_end_at' => now()]);
 
-        $attendance = Attendance::where('user_id', $user->id)->latest()->first();
-        $updatedBreak = [
-            'break_end_at' => now(),
-        ];
-
-        $Break = ProposalBreak::where('attendance_id', $attendance->id)->whereNull('break_end_at')->latest();
-
-        $Break->update($updatedBreak);
-
-        $user->update([
-            'attendance_status' => '出勤中',
-        ]);
-
-        return redirect()->route('attendance.register.form');
+        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY->value]);
     }
 }
