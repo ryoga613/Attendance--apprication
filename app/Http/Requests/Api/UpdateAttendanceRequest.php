@@ -38,7 +38,7 @@ class UpdateAttendanceRequest extends FormRequest
             'clock_out_at.after' => '退勤時刻は出勤時刻より後の時間を入力してください。',
 
             'comment.string' => '備考は文字列で入力してください。',
-            'comment.max' => '備考は1000文字以内で入力してください。',
+            'comment.max' => '備考は255文字以内で入力してください。',
         ];
     }
 }

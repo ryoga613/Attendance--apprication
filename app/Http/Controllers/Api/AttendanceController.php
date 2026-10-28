@@ -8,34 +8,31 @@ use App\Http\Requests\Api\StoreAttendanceRequest;
 use App\Http\Requests\Api\UpdateAttendanceRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
+use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class AttendanceController extends Controller
 {
     use AuthorizesRequests;
 
-    // 一覧を取得する
+    // 一覧を取得する(認証不要)
     public function index(IndexAttendanceRequest $request)
     {
-        Gate::authorize('viewAny', Attendance::class);
-
-        $perPage = $request->per_page;
-
-        $user = Auth::user();
-
-        $date = $request->date;
-
         $attendanceRecord_records = Attendance::latest()
-            ->where('user_id', $user->id)
-            ->where('work_date', $date)
-            ->paginate($perPage);
+            ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))
+            ->when($request->filled('date'), fn ($query) => $query->whereDate('work_date', $request->date))
+            ->when($request->filled('month'), function ($query) use ($request) {
+                $month = Carbon::createFromFormat('!Y-m', $request->month);
+
+                $query->whereBetween('work_date', [$month->toDateString(), $month->endOfMonth()->toDateString()]);
+            })
+            ->paginate($request->per_page);
 
         return AttendanceResource::collection($attendanceRecord_records);
     }
 
-    // 詳細を取得する
+    // 詳細を取得する(認証不要)
     public function show(int $id)
     {
 
@@ -46,8 +43,6 @@ class AttendanceController extends Controller
                 'message' => '勤怠情報が見つかりませんでした。',
             ], 404);
         }
-
-        Gate::authorize('view', $attendance);
 
         $attendance->load(['user', 'breaks', 'attendanceCorrections']);
 

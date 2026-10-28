@@ -20,7 +20,6 @@ class AttendanceResource extends JsonResource
         'work_date' => $this->work_date?->format('Y-m-d'),
         'clock_in' => $this->clock_in,
         'clock_out' => $this->clock_out,
-        'status' => $this->status?->value,
         'comment' => $this->comment,
         'created_at' => $this->created_at,
         'updated_at' => $this->updated_at,

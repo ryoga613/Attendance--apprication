@@ -14,7 +14,7 @@ class ApiAttendanceRecordTest extends TestCase
      */
     use RefreshDatabase;
 
-    public function test_apiで勤怠一覧に自分の勤怠だけが表示される(): void
+    public function test_apiでuser_idを指定するとそのユーザーの勤怠だけが表示される(): void
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
@@ -31,9 +31,8 @@ class ApiAttendanceRecordTest extends TestCase
             'work_date' => '2026-10-19',
         ]);
 
-        // user1としてログインし、日付を指定して取得
-        $response = $this->actingAs($user1)
-            ->getJson('/api/v1/attendance-records?date=2026-10-19&per_page=20');
+        // ユーザーと日付を指定して取得
+        $response = $this->getJson("/api/v1/attendance-records?user_id={$user1->id}&date=2026-10-19&per_page=20");
 
         $response->assertOk()
             ->assertJsonFragment(['id' => $attendance1->id])
@@ -198,5 +197,29 @@ class ApiAttendanceRecordTest extends TestCase
 
         $response->assertStatus(204);
 
+    }
+
+    public function test_未認証でも勤怠一覧と詳細を取得できる(): void
+    {
+        $attendance = Attendance::factory()->create();
+
+        $this->getJson('/api/v1/attendance-records')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $attendance->id]);
+
+        $this->getJson("/api/v1/attendance-records/{$attendance->id}")
+            ->assertOk()
+            ->assertJsonFragment(['id' => $attendance->id]);
+    }
+
+    public function test_勤怠一覧を月で絞り込める(): void
+    {
+        $september = Attendance::factory()->create(['work_date' => '2026-09-30']);
+        $october = Attendance::factory()->create(['work_date' => '2026-10-01']);
+
+        $this->getJson('/api/v1/attendance-records?month=2026-10')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $october->id])
+            ->assertJsonMissing(['id' => $september->id]);
     }
 }
