@@ -115,3 +115,25 @@
     padding-top: 30px;
     text-align: center;
 }
+/* 退勤し忘れた過去の勤怠のお知らせ */
+.attendance__notice {
+    background: #FFFFFF;
+    border-left: 4px solid #D9534F;
+    margin: 0 auto 30px;
+    max-width: 640px;
+    padding: 15px 20px;
+}
+
+.attendance__notice--text {
+    font-weight: bold;
+}
+
+.attendance__notice--list {
+    list-style: none;
+    margin-top: 8px;
+    padding: 0;
+}
+
+.attendance__notice--link {
+    color: #0073CC;
+}

@@ -55,10 +55,18 @@ class UserAttendanceController extends Controller
         $todayAttendance = $this->todayAttendance($user);
         $status = $this->statusOf($todayAttendance)->value;
 
+        // 退勤し忘れた過去の勤怠(承認待ちの修正申請があるものは除く)は、修正申請を促す
+        $unfinishedAttendances = Attendance::where('user_id', $user->id)
+            ->whereDate('work_date', '<', Carbon::today())
+            ->whereNull('clock_out_at')
+            ->whereDoesntHave('attendanceCorrections', fn ($query) => $query->where('approval_status', ApprovalStatus::PENDING))
+            ->orderBy('work_date')
+            ->get();
+
         $formattedDate = Carbon::now()->locale('ja')->translatedFormat('Y 年 n月 j日（D）');
         $formattedTime = Carbon::now();
 
-        return view('user.attendance-register', compact('todayAttendance', 'user', 'status', 'formattedDate', 'formattedTime'));
+        return view('user.attendance-register', compact('todayAttendance', 'user', 'status', 'unfinishedAttendances', 'formattedDate', 'formattedTime'));
     }
 
     public function detail($id)
