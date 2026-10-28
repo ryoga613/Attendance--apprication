@@ -201,15 +201,4 @@ class UserAttendanceController extends Controller
 
         return redirect()->route('attendance.register.form');
     }
-
-    public function approveStampCorrectionRequest($id)
-    {
-
-        Gate::authorize('requestCorrection', Attendance::class);
-
-        $user = Auth::user();
-        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-
-        return view('admin.admin-application-detail', compact('application', 'user'));
-    }
 }
