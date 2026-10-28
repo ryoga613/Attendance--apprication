@@ -4,7 +4,7 @@ namespace App\Http\Controllers\AdminControllers;
 
 use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\UpdateAttendanceRequest;
+use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
@@ -14,31 +14,7 @@ use Illuminate\Support\Facades\Gate;
 
 class AdminAttendanceCorrectionController extends Controller
 {
-    public function index()
-    {
-        Gate::authorize('viewAny', AttendanceCorrection::class);
-
-        $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
-            ->latest()
-            ->get();
-        $formattedApplications = $applications->map(function ($application) {
-            return [
-                'id' => $application->id,
-                'date' => $application->AttendanceRecord->work_date,
-                'application_date' => $application->created_at,
-                'clock_in_at' => $application->clock_in_at,
-                'clock_out_at' => $application->clock_out_at,
-                'approval_status' => $application->approval_status->value,
-                'comment' => $application->comment,
-            ];
-        });
-
-        $user = Auth::user();
-
-        return view('admin.admin-application-list', compact('applications', 'formattedApplications', 'user'));
-    }
-
-    public function store(UpdateAttendanceRequest $request, $id)
+    public function store(AttendanceCorrectionRequest $request, $id)
     {
 
         $attendance = Attendance::with('breaks')->findOrFail($id);

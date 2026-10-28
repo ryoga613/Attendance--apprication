@@ -34,31 +34,15 @@ class UserAttendanceController extends Controller
             ->orderBy('work_date')
             ->get();
 
-        $formattedAttendanceRecords = $attendanceRecords->map(function ($attendance) {
-            $clockIn = $attendance->clock_in_at ? Carbon::parse($attendance->clock_in_at) : null;
-            $clockOut = $attendance->clock_out_at ? Carbon::parse($attendance->clock_out_at) : null;
-
-            $breakSeconds = 0;
-            foreach ($attendance->breaks as $break) {
-                if ($break->break_start_at && $break->break_end_at) {
-                    $breakSeconds += Carbon::parse($break->break_end_at)
-                        ->diffInSeconds(Carbon::parse($break->break_start_at));
-                }
-            }
-
-            $workSeconds = ($clockIn && $clockOut)
-                ? max($clockOut->diffInSeconds($clockIn) - $breakSeconds, 0)
-                : null;
-
-            return [
-                'id' => $attendance->id,
-                'date' => Carbon::parse($attendance->work_date)->locale('ja')->format('Y 年 m 月 d 日'),
-                'clock_in' => $clockIn ? $clockIn->format('H:i') : '',
-                'clock_out' => $clockOut ? $clockOut->format('H:i') : '',
-                'total_break_time' => $breakSeconds > 0 ? gmdate('H:i:s', $breakSeconds) : null,
-                'total_time' => $workSeconds !== null ? gmdate('H:i:s', $workSeconds) : null,
-            ];
-        });
+        // 休憩・勤務時間の計算はAttendanceモデルにまとめている
+        $formattedAttendanceRecords = $attendanceRecords->map(fn ($attendance) => [
+            'id' => $attendance->id,
+            'date' => $attendance->work_date->locale('ja')->format('Y 年 m 月 d 日'),
+            'clock_in' => $attendance->clock_in ?? '',
+            'clock_out' => $attendance->clock_out ?? '',
+            'total_break_time' => $attendance->total_break_time,
+            'total_time' => $attendance->total_time,
+        ]);
 
         return view('user.user-attendance-list', compact('formattedAttendanceRecords', 'previousMonth', 'nextMonth', 'date'));
     }

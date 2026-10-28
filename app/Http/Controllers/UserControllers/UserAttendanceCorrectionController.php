@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\UserControllers;
 
 use App\Enums\ApprovalStatus;
-use App\Http\Controllers\AdminControllers\AdminAttendanceController;
-use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreAttendanceCorrectionRequest;
+use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreakCorrection;
@@ -16,36 +14,7 @@ use Illuminate\Support\Facades\Gate;
 
 class UserAttendanceCorrectionController extends Controller
 {
-    public function index()
-    {
-        Gate::authorize('viewAny', AttendanceCorrection::class);
-
-        if (Auth::guard('admin')->check()) {
-            return app(AdminAttendanceCorrectionController::class)->index();
-        }
-
-        $user = Auth::user();
-        $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])
-            ->where('user_id', $user->id)
-            ->latest()
-            ->get();
-
-        $formattedApplications = $applications->map(function ($application) {
-            return [
-                'id' => $application->id,
-                'date' => $application->AttendanceRecord->work_date,
-                'application_date' => $application->created_at,
-                'clock_in_at' => $application->clock_in_at,
-                'clock_out_at' => $application->clock_out_at,
-                'approval_status' => $application->approval_status->value,
-                'comment' => $application->comment,
-            ];
-        });
-
-        return view('user.user-application-list', compact('applications', 'formattedApplications', 'user'));
-    }
-
-    public function store(StoreAttendanceCorrectionRequest $request, $id)
+    public function store(AttendanceCorrectionRequest $request, $id)
     {
         Gate::authorize('store', AttendanceCorrection::class);
 
@@ -122,14 +91,9 @@ class UserAttendanceCorrectionController extends Controller
 
     public function detail($id)
     {
-
         $user = Auth::user();
 
-        if (Auth::guard('admin')->check()) {
-            return app(AdminAttendanceController::class)->detail($id);
-        }
-
-        $attendance = Attendance::with('breaks')->FindOrFail($id);
+        $attendance = Attendance::with('breaks')->findOrFail($id);
 
         $application = $attendance->attendanceCorrections()
             ->with('proposalBreaks')

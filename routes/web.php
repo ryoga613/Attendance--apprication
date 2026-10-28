@@ -53,7 +53,6 @@ Route::middleware(['auth:admin', 'admin'])->group(function () {
     });
 
 });
-// Route::get('/stamp_correction_request/list', [UserAttendanceCorrectionController::class, 'index'])->name('attendance.correction.index');
 Route::get('/stamp_correction_request/list', [SharedCorrectionController::class, 'index'])
     ->middleware('auth:web,admin')
     ->name('attendance.correction.index');

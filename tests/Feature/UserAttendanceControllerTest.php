@@ -98,8 +98,8 @@ class UserAttendanceControllerTest extends TestCase
             return $records->count() === 1
                 && $first['clock_in'] === '09:00'
                 && $first['clock_out'] === '18:00'
-                && $first['total_break_time'] === '01:00:00'
-                && $first['total_time'] === '08:00:00';
+                && $first['total_break_time'] === '01:00'
+                && $first['total_time'] === '08:00';
         });
     }
 
