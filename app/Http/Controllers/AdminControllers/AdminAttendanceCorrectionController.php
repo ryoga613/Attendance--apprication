@@ -138,29 +138,43 @@ class AdminAttendanceCorrectionController extends Controller
 
     public function updateStampCorrectionRequest($id)
     {
-        $application = AttendanceCorrection::findOrFail($id);
+        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
         Gate::authorize('approve', $application);
 
-        $attendance = Attendance::findOrFail($application->attendance_id);
-
-        $attendance->update([
-            'clock_in_at' => $application->clock_in_at,
-            'clock_out_at' => $application->clock_out_at,
-        ]);
-
-        $proposalBreaks = $application->proposalBreaks;
-
-        foreach ($proposalBreaks as $proposalBreak) {
-            $attendance->breaks()->updateOrCreate(
-                ['id' => $proposalBreak->id],
-                [
-                    'break_start_at' => $proposalBreak->break_start_at,
-                    'break_end_at' => $proposalBreak->break_end_at,
-                ]
-            );
+        if ($application->approval_status === '承認済み') {
+            return redirect()
+                ->route('stamp_correction_request.approve', ['attendance_correct_request_id' => $id])
+                ->withErrors(['approval_status' => 'この申請はすでに承認済みです']);
         }
 
-        $application->update(['approval_status' => '承認済み']);
+        DB::transaction(function () use ($application) {
+            $attendance = Attendance::findOrFail($application->attendance_id);
+
+            $attendance->update([
+                'clock_in_at' => $application->clock_in_at,
+                'clock_out_at' => $application->clock_out_at,
+            ]);
+
+            // 申請に含まれない休憩は、申請で削除されたものとして消す
+            $keepBreakIds = $application->proposalBreaks->pluck('proposal_break_id')->filter();
+            $attendance->breaks()->whereNotIn('id', $keepBreakIds)->delete();
+
+            foreach ($application->proposalBreaks as $proposalBreak) {
+                $data = [
+                    'break_start_at' => $proposalBreak->break_start_at,
+                    'break_end_at' => $proposalBreak->break_end_at,
+                ];
+
+                // 既存の休憩の修正なら更新、新しく追加された休憩なら作成
+                $break = $proposalBreak->proposal_break_id
+                    ? $attendance->breaks()->find($proposalBreak->proposal_break_id)
+                    : null;
+
+                $break ? $break->update($data) : $attendance->breaks()->create($data);
+            }
+
+            $application->update(['approval_status' => '承認済み']);
+        });
 
         return redirect()
             ->route('admin.stamp_correction_request.approve', [

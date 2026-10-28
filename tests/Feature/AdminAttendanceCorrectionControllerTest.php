@@ -182,4 +182,78 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
             'approval_status' => '承認済み',
         ]);
     }
+
+    /** 承認すると、既存の休憩が更新され、重複して作られない */
+    public function test_承認すると既存の休憩が更新され重複しない()
+    {
+        $correction = $this->makeCorrection();
+
+        // 休憩IDをProposalBreakCorrectionのIDと確実にずらす
+        $breakCorrection = $correction->proposalBreaks->first();
+        $this->break->delete();
+        $this->break = ProposalBreak::forceCreate([
+            'id' => $breakCorrection->id + 1000,
+            'attendance_id' => $this->attendance->id,
+            'break_start_at' => '2026-10-16 12:00:00',
+            'break_end_at' => '2026-10-16 13:00:00',
+        ]);
+        ProposalBreakCorrection::forceCreate([
+            'attendance_correction_id' => $correction->id,
+            'proposal_break_id' => $this->break->id,
+            'break_start_at' => '2026-10-16 12:30:00',
+            'break_end_at' => '2026-10-16 13:30:00',
+        ]);
+
+        $this->asAdmin()->post('/stamp_correction_request/approve/'.$correction->id);
+
+        $this->assertSame(1, $this->attendance->breaks()->count());
+        $this->assertDatabaseHas('proposal_breaks', [
+            'id' => $this->break->id,
+            'break_start_at' => '2026-10-16 12:30:00',
+            'break_end_at' => '2026-10-16 13:30:00',
+        ]);
+    }
+
+    /** 申請で追加された休憩は作成され、申請にない休憩は削除される */
+    public function test_承認すると休憩が申請内容と一致する()
+    {
+        $removedBreak = ProposalBreak::create([
+            'attendance_id' => $this->attendance->id,
+            'break_start_at' => '2026-10-16 16:00:00',
+            'break_end_at' => '2026-10-16 16:15:00',
+        ]);
+
+        $correction = $this->makeCorrection();
+        ProposalBreakCorrection::create([
+            'attendance_correction_id' => $correction->id,
+            'proposal_break_id' => null,
+            'break_start_at' => '2026-10-16 17:00:00',
+            'break_end_at' => '2026-10-16 17:30:00',
+        ]);
+
+        $this->asAdmin()->post('/stamp_correction_request/approve/'.$correction->id);
+
+        $this->assertSame(2, $this->attendance->breaks()->count());
+        $this->assertDatabaseMissing('proposal_breaks', ['id' => $removedBreak->id]);
+        $this->assertDatabaseHas('proposal_breaks', [
+            'attendance_id' => $this->attendance->id,
+            'break_start_at' => '2026-10-16 17:00:00',
+            'break_end_at' => '2026-10-16 17:30:00',
+        ]);
+    }
+
+    /** 承認済みの申請は再度承認できない */
+    public function test_承認済みの申請は再度承認できない()
+    {
+        $correction = $this->makeCorrection();
+        $correction->update(['approval_status' => '承認済み']);
+
+        $response = $this->asAdmin()->post('/stamp_correction_request/approve/'.$correction->id);
+
+        $response->assertSessionHasErrors('approval_status');
+        $this->assertDatabaseHas('attendances', [
+            'id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 09:00:00',
+        ]);
+    }
 }
