@@ -25,7 +25,7 @@ class AdminAttendanceController extends Controller
             ->whereDate('work_date', $date)
             ->get();
 
-        $users = User::all();
+        $users = User::where('admin_status', false)->get();
 
         return view('admin.admin-attendance-list', compact('attendanceRecords', 'date', 'previousDay', 'nextDay', 'users'));
     }
@@ -61,7 +61,7 @@ class AdminAttendanceController extends Controller
     {
         Gate::authorize('manage', Attendance::class);
 
-        $users = User::all();
+        $users = User::where('admin_status', false)->get();
 
         return view('admin.staff-list', compact('users'));
     }

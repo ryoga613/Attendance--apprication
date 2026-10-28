@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-// use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LogoutController extends Controller
 {
-    public function UserLogout(Request $request)
+    public function userLogout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
@@ -17,7 +16,7 @@ class LogoutController extends Controller
         return redirect('/login');
     }
 
-    public function AdminLogout(Request $request)
+    public function adminLogout(Request $request)
     {
         Auth::guard('admin')->logout();
         $request->session()->invalidate();

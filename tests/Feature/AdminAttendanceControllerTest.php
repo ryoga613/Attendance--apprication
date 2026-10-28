@@ -172,4 +172,12 @@ class AdminAttendanceControllerTest extends TestCase
         $response->assertViewHas('formattedAttendanceRecords', fn ($records) => $records->count() === 1
             && $records->first()['date']->format('Y-m-d') === '2026-10-16');
     }
+
+    public function test_スタッフ一覧に管理者は表示されない()
+    {
+        $response = $this->actingAs($this->admin, 'admin')->get('admin/staff/list');
+
+        $response->assertViewHas('users', fn ($users) => $users->doesntContain('id', $this->admin->id)
+            && $users->contains('name', '当日さん'));
+    }
 }
