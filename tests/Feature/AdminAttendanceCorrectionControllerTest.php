@@ -256,4 +256,24 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
             'clock_in_at' => '2026-10-16 09:00:00',
         ]);
     }
+
+    /** 未ログインでは申請の詳細画面が見れない */
+    public function test_未ログインでは申請の詳細画面が見れない()
+    {
+        $correction = $this->makeCorrection();
+
+        $response = $this->get('/stamp_correction_request/approve/'.$correction->id);
+
+        $response->assertRedirect(route('login'));
+    }
+
+    /** 一般ユーザーは申請の詳細画面(承認画面)が見れない */
+    public function test_一般ユーザーは申請の承認画面が見れない()
+    {
+        $correction = $this->makeCorrection();
+
+        $response = $this->actingAs($this->staff)->get('/stamp_correction_request/approve/'.$correction->id);
+
+        $response->assertRedirect(route('login'));
+    }
 }

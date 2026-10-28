@@ -119,34 +119,6 @@ class UserAttendanceCorrectionController extends Controller
             ->with('success', '勤怠の修正を申請しました');
     }
 
-    public function approveStampCorrectionRequest($id)
-    {
-        Gate::authorize('approve', AttendanceCorrection::class);
-
-        $user = Auth::user();
-        $data = Attendance::with('breaks')->findOrFail($id);
-        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
-        $breaks = $data->breaks->map(function ($break) {
-            return [
-                'break_in' => $break->break_start_at->format('H:i'),
-                'break_out' => $break->break_end_at->format('H:i'),
-            ];
-        });
-        $data = ([
-
-            'breaks' => $breaks,
-            'id' => $data->id,
-            'date' => $data->work_date->locale('ja')->translatedFormat('n/j(D)'),
-            'year' => $data->work_date?->format('Y 年'),
-            'clock_in' => $data->clock_in_at->format('H:i'),
-            'clock_out' => $data->clock_out_at->format('H:i'),
-            'comment' => $data->comment,
-            'application' => $application,
-        ]);
-
-        return view('user.user-detail', compact('data', 'user'));
-    }
-
     public function detail($id)
     {
 
