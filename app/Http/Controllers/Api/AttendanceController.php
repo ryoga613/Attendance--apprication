@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\API\IndexAttendanceRequest;
+use App\Http\Requests\Api\IndexAttendanceRequest;
 use App\Http\Requests\Api\StoreAttendanceRequest;
 use App\Http\Requests\Api\UpdateAttendanceRequest;
 use App\Http\Resources\AttendanceResource;
