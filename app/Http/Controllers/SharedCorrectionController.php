@@ -16,13 +16,4 @@ class SharedCorrectionController extends Controller
 
         return app(UserAttendanceCorrectionController::class)->index();
     }
-
-    public function approveStampCorrectionRequest($id)
-    {
-        if (Auth::guard('admin')->check()) {
-            return app(AdminAttendanceCorrectionController::class)->approveStampCorrectionRequest($id);
-        }
-
-        return app(UserAttendanceCorrectionController::class)->approveStampCorrectionRequest($id);
-    }
 }
