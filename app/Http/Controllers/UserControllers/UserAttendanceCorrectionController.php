@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserControllers;
 
+use App\Enums\ApprovalStatus;
 use App\Http\Controllers\AdminControllers\AdminAttendanceController;
 use App\Http\Controllers\AdminControllers\AdminAttendanceCorrectionController;
 use App\Http\Controllers\Controller;
@@ -36,7 +37,7 @@ class UserAttendanceCorrectionController extends Controller
                 'application_date' => $application->created_at,
                 'clock_in_at' => $application->clock_in_at,
                 'clock_out_at' => $application->clock_out_at,
-                'approval_status' => $application->approval_status,
+                'approval_status' => $application->approval_status->value,
                 'comment' => $application->comment,
             ];
         });
@@ -95,7 +96,7 @@ class UserAttendanceCorrectionController extends Controller
             'attendance_id' => $attendance->id,
             'clock_in_at' => $date.' '.$validated['new_clock_in'],
             'clock_out_at' => $date.' '.$validated['new_clock_out'],
-            'approval_status' => '承認待ち',
+            'approval_status' => ApprovalStatus::PENDING,
             'comment' => $validated['comment'] ?? null,
         ]);
 

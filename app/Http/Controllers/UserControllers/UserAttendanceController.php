@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\UserControllers;
 
+use App\Enums\ApprovalStatus;
 use App\Enums\AttendanceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
@@ -91,7 +92,7 @@ class UserAttendanceController extends Controller
         ];
 
         // 承認済みなら、修正申請は表示せず元の勤怠データを使う
-        $isApproved = $application->approval_status === '承認済み';
+        $isApproved = $application->approval_status === ApprovalStatus::APPROVED;
 
         $breaks = $isApproved
             ? $attendance->breaks->map($formatBreak)
@@ -162,14 +163,14 @@ class UserAttendanceController extends Controller
             'clock_out_at' => null,
         ]);
 
-        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY->value]);
+        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY]);
     }
 
     private function clockOut($user, Attendance $attendance): void
     {
         $attendance->update(['clock_out_at' => now()]);
 
-        $user->update(['attendance_status' => AttendanceStatus::CLOCKED_OUT->value]);
+        $user->update(['attendance_status' => AttendanceStatus::CLOCKED_OUT]);
     }
 
     private function breakIn($user, Attendance $attendance): void
@@ -179,13 +180,13 @@ class UserAttendanceController extends Controller
             'break_end_at' => null,
         ]);
 
-        $user->update(['attendance_status' => AttendanceStatus::ON_BREAK->value]);
+        $user->update(['attendance_status' => AttendanceStatus::ON_BREAK]);
     }
 
     private function breakOut($user, Attendance $attendance): void
     {
         $attendance->breaks()->whereNull('break_end_at')->update(['break_end_at' => now()]);
 
-        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY->value]);
+        $user->update(['attendance_status' => AttendanceStatus::ON_DUTY]);
     }
 }

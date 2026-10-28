@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ApprovalStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,7 @@ class AttendanceCorrection extends Model
         'work_date' => 'date',
         'clock_in_at' => 'datetime',
         'clock_out_at' => 'datetime',
+        'approval_status' => ApprovalStatus::class,
     ];
 
     public function user(): BelongsTo

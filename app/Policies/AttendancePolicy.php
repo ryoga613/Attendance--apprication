@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ApprovalStatus;
 use App\Models\Attendance;
 use App\Models\User;
 
@@ -50,7 +51,7 @@ class AttendancePolicy
     {
         return $user->id === $attendance->user_id
             && ! $attendance->attendanceCorrections()
-                ->where('approval_status', '承認待ち')
+                ->where('approval_status', ApprovalStatus::PENDING)
                 ->exists();
     }
 

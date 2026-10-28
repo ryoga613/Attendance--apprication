@@ -48,20 +48,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'attendance_status' => AttendanceStatus::class,
     ];
 
-    public function getAttendanceStatusAttribute($value): string
-    {
-        // DBから取り出した値（あるいはEnum）を判定して日本語文字列を返す
-        return match ($value) {
-            'off_duty', AttendanceStatus::OFF_DUTY->value, AttendanceStatus::OFF_DUTY => '勤務外',
-            'on_duty', AttendanceStatus::ON_DUTY->value, AttendanceStatus::ON_DUTY => '出勤中',
-            'on_break', AttendanceStatus::ON_BREAK->value, AttendanceStatus::ON_BREAK => '休憩中',
-            'clocked_out', AttendanceStatus::CLOCKED_OUT->value, AttendanceStatus::CLOCKED_OUT => '退勤済',
-            default => $value ?? '勤務外', // 未設定時の初期値
-        };
-    }
-
-    
-
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
@@ -71,16 +57,4 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(AttendanceCorrection::class);
     }
-
-    // public function attendance_status(): AttendanceStatus
-    // {
-    //     $Status = $this->getRawOriginal('attendance_status');
-
-    //     if ($Status instanceof AttendanceStatus) {
-    //         return $Status;
-    //     }
-
-    //     return AttendanceStatus::tryFrom($Status) ?? AttendanceStatus::OFF_DUTY;
-    // }
-
 }
