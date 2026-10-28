@@ -77,4 +77,17 @@ class AdminLoginTest extends TestCase
 
         $this->assertGuest('admin');
     }
+
+    public function test_管理者がログアウトするとセッションが破棄される()
+    {
+        $admin = User::where('email', 'admin@example.com')->first();
+
+        $this->actingAs($admin, 'admin')->withSession(['keep' => 'value']);
+
+        $response = $this->post('/admin/logout');
+
+        $response->assertRedirect('/admin/login');
+        $response->assertSessionMissing('keep');
+        $this->assertGuest('admin');
+    }
 }

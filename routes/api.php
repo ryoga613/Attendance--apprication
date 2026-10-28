@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('login', [AuthController::class, 'login']);
+// 画面のログインと同じく、メールアドレスとIPごとに1分5回まで
+Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
