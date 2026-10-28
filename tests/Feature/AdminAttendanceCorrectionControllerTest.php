@@ -182,4 +182,24 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
             'approval_status' => '承認済み',
         ]);
     }
+
+    /** 未ログインでは申請の詳細画面が見れない */
+    public function test_未ログインでは申請の詳細画面が見れない()
+    {
+        $correction = $this->makeCorrection();
+
+        $response = $this->get('/stamp_correction_request/approve/'.$correction->id);
+
+        $response->assertRedirect(route('login'));
+    }
+
+    /** 一般ユーザーは申請の詳細画面(承認画面)が見れない */
+    public function test_一般ユーザーは申請の承認画面が見れない()
+    {
+        $correction = $this->makeCorrection();
+
+        $response = $this->actingAs($this->staff)->get('/stamp_correction_request/approve/'.$correction->id);
+
+        $response->assertRedirect(route('login'));
+    }
 }
