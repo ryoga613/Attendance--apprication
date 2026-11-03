@@ -20,8 +20,10 @@ class UserAttendanceController extends Controller
 
         $user = Auth::user();
 
-        $date = $request->query('date')
-            ? Carbon::createFromFormat('!Y-m', $request->query('date'))
+        // 不正な形式の月が渡されたときは、エラーにせず今月を表示する
+        $month = $request->query('date');
+        $date = $this->isValidDateFormat($month, 'Y-m')
+            ? Carbon::createFromFormat('!Y-m', $month)
             : now()->startOfMonth();
 
         $previousMonth = $date->copy()->subMonth()->format('Y-m');

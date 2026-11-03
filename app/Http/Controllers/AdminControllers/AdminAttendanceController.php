@@ -17,10 +17,14 @@ class AdminAttendanceController extends Controller
     {
         Gate::authorize('manage', Attendance::class);
 
-        $date = Carbon::parse(request()->get('date', now()->toDateString()));
+        // 不正な形式の日付が渡されたときは、エラーにせず今日を表示する
+        $day = request()->query('date');
+        $date = $this->isValidDateFormat($day, 'Y-m-d')
+            ? Carbon::createFromFormat('!Y-m-d', $day)
+            : now()->startOfDay();
 
-        $previousDay = $date->copy()->subDay();
-        $nextDay = $date->copy()->addDay();
+        $previousDay = $date->copy()->subDay()->toDateString();
+        $nextDay = $date->copy()->addDay()->toDateString();
 
         $attendanceRecords = Attendance::with('breaks')
             ->whereDate('work_date', $date)
@@ -78,8 +82,10 @@ class AdminAttendanceController extends Controller
 
         $user = User::findOrFail($id);
 
-        $date = request()->query('date')
-            ? Carbon::createFromFormat('!Y-m', request()->query('date'))
+        // 不正な形式の月が渡されたときは、エラーにせず今月を表示する
+        $month = request()->query('date');
+        $date = $this->isValidDateFormat($month, 'Y-m')
+            ? Carbon::createFromFormat('!Y-m', $month)
             : now()->startOfMonth();
 
         $attendanceRecords = $this->monthlyRecords($user->id, $date);

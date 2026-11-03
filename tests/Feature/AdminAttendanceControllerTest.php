@@ -80,6 +80,29 @@ class AdminAttendanceControllerTest extends TestCase
             ->assertDontSee('当日さん');
     }
 
+    public function test_不正な形式の日付を指定すると今日の勤怠一覧が表示される()
+    {
+        foreach (['abc', '2026-10-32', '2026/10/15'] as $invalid) {
+            $this->openList('?date='.urlencode($invalid))
+                ->assertStatus(200)
+                ->assertSee('2026/10/16')
+                ->assertSee('当日さん');
+        }
+    }
+
+    public function test_不正な形式の月を指定すると今月のスタッフの勤怠一覧が表示される()
+    {
+        $user = User::where('name', '当日さん')->first();
+
+        foreach (['abc', '2026-13', '2026/10'] as $invalid) {
+            $this->actingAs($this->admin, 'admin')
+                ->get("admin/attendance/staff/{$user->id}?date=".urlencode($invalid))
+                ->assertStatus(200)
+                ->assertViewHas('previousMonth', '2026-09')
+                ->assertViewHas('nextMonth', '2026-11');
+        }
+    }
+
     public function test_勤務詳細が見れる()
     {
         $attendance = Attendance::factory()->create([
