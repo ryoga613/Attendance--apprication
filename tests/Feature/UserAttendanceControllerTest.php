@@ -126,6 +126,20 @@ class UserAttendanceControllerTest extends TestCase
             ->assertViewHas('formattedAttendanceRecords', fn ($r) => $r->count() === 0);
     }
 
+    public function test_不正な形式の月を指定すると今月の勤怠一覧が表示される()
+    {
+        Carbon::setTestNow('2026-10-16 10:00:00');
+
+        $user = $this->createUser();
+
+        foreach (['abc', '2026-13', '2026/10'] as $invalid) {
+            $this->actingAs($user)->get('/attendance/list?date='.urlencode($invalid))
+                ->assertStatus(200)
+                ->assertViewHas('previousMonth', '2026-09')
+                ->assertViewHas('nextMonth', '2026-11');
+        }
+    }
+
     // ---------- 打刻画面 ----------
 
     public function test_打刻画面が表示される()

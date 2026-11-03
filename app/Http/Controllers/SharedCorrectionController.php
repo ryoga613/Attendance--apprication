@@ -11,10 +11,16 @@ class SharedCorrectionController extends Controller
 {
     public function index()
     {
-        Gate::authorize('viewAny', AttendanceCorrection::class);
+        // 管理者として扱うのは、adminガードでログインしていて、今も管理者権限を持つ人だけ
+        // (ログイン後に管理者権限を外された人に、全員分の申請を見せないため)
+        $admin = Auth::guard('admin')->user();
+        $isAdmin = $admin && $admin->admin_status;
 
-        $isAdmin = Auth::guard('admin')->check();
-        $user = Auth::user();
+        // 管理者でなければ、一般ユーザーとしてログインしている必要がある
+        $user = $isAdmin ? $admin : Auth::guard('web')->user();
+        abort_if(! $user, 403, 'このページにアクセスする権限がありません。');
+
+        Gate::forUser($user)->authorize('viewAny', AttendanceCorrection::class);
 
         // 管理者は全員分、一般ユーザーは自分の申請のみ
         $applications = AttendanceCorrection::with(['user', 'AttendanceRecord'])

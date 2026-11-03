@@ -90,6 +90,18 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         });
     }
 
+    public function test_管理者権限を外されたユーザーは申請一覧を見られない()
+    {
+        $this->makeCorrection();
+
+        // adminガードでログイン中に、管理者権限を外された
+        $this->admin->update(['admin_status' => false]);
+
+        $this->actingAs($this->admin, 'admin')
+            ->get('/stamp_correction_request/list')
+            ->assertStatus(403);
+    }
+
     public function test_申請一覧の申請日時には申請した日が表示される()
     {
         // 10/10に申請して、今日(10/16)に一覧を開く
