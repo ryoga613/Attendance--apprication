@@ -43,7 +43,7 @@ class StoreAttendanceRequest extends FormRequest
             'clock_in_at.before_or_equal' => '出勤時間に未来の時刻は指定できません。',
 
             'clock_out_at.date' => '退勤時間の形式が正しくありません。',
-            'clock_out_at.after' => '退勤時間は出勤時間より後にしてください。',
+            'clock_out_at.after' => '出勤時間もしくは退勤時間が不適切な値です。',
             'clock_out_at.before_or_equal' => '退勤時間に未来の時刻は指定できません。',
 
             'comment.string' => '備考は文字列で入力してください。',
