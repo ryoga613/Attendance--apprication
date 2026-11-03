@@ -67,6 +67,13 @@ class AttendancePolicy
     }
 
     // API
+
+    // 勤怠の詳細は本人だけ見られる(管理者は before() で全員分見られる)
+    public function apiView(User $user, Attendance $attendance): bool
+    {
+        return $user->id === $attendance->user_id;
+    }
+
     public function apiUpdate(User $user, Attendance $attendance)
     {
         return $user->id === $attendance->user_id;
