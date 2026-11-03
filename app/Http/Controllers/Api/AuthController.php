@@ -23,7 +23,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'token' => $user->createToken('api-token')->plainTextToken,
+            'token' => $user->createToken('api-token', ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken,
         ]);
     }
 }
