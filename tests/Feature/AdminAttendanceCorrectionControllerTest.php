@@ -90,6 +90,18 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         });
     }
 
+    public function test_申請一覧の申請日時には申請した日が表示される()
+    {
+        // 10/10に申請して、今日(10/16)に一覧を開く
+        Carbon::setTestNow('2026-10-10 15:00:00');
+        $this->makeCorrection();
+        Carbon::setTestNow('2026-10-16 10:00:00');
+
+        $this->asAdmin()->get('/stamp_correction_request/list')
+            ->assertStatus(200)
+            ->assertSee('2026/10/10');
+    }
+
     /** 管理者が勤怠を直接修正できる(store) */
     public function test_管理者が勤怠を直接修正できる()
     {
