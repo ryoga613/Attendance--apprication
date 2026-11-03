@@ -129,17 +129,17 @@ curl -X POST http://localhost/api/login \
 
 | メソッド | パス | 内容 | 認証 | 認可 |
 |---|---|---|---|---|
-| GET | `/api/v1/attendance-records` | 勤怠一覧を取得する | 不要 | 不要 |
-| GET | `/api/v1/attendance-records/{id}` | 勤怠詳細を取得する | 不要 | 不要 |
+| GET | `/api/v1/attendance-records` | 勤怠一覧を取得する | 必須 | 一般ユーザーは本人分のみ,管理者は全員分 |
+| GET | `/api/v1/attendance-records/{id}` | 勤怠詳細を取得する | 必須 | 本人,管理者のみ |
 | POST | `/api/v1/attendance-records` | 勤怠を新規登録する（出勤打刻） | 必須 | なし |
 | PUT | `/api/v1/attendance-records/{id}` | 勤怠を更新する（退勤打刻など） | 必須 | 本人,管理者のみ |
 | DELETE | `/api/v1/attendance-records/{id}` | 勤怠を削除する | 必須 | 本人,管理者のみ |
 
-一覧取得のクエリパラメータ（すべて任意。指定しない場合は全員分の勤怠を返す）
+一覧取得のクエリパラメータ（すべて任意。指定しない場合、一般ユーザーは本人分、管理者は全員分の勤怠を返す）
 
 | パラメータ | 形式 | 内容 |
 |---|---|---|
-| `user_id` | 整数 | ユーザーで絞り込む |
+| `user_id` | 整数 | ユーザーで絞り込む（一般ユーザーが他人を指定すると 403） |
 | `date` | `Y-m-d` | 勤務日で絞り込む |
 | `month` | `Y-m` | 勤務月で絞り込む |
 | `per_page` | 1〜100 | 1ページの件数（既定 20） |

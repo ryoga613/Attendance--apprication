@@ -15,10 +15,13 @@ class UpdateAttendanceRequest extends FormRequest
 
     public function rules(): array
     {
+        // 更新する勤怠(管理者が他人の勤怠を更新する場合もあるので、重複は勤怠の持ち主で確認する)
+        $attendance = $this->route('attendanceRecord');
+
         return [
             'work_date' => ['nullable', 'date', Rule::unique('attendances', 'work_date')
-                ->where('user_id', $this->user()->id)
-                ->ignore($this->route('attendanceRecord'))],
+                ->where('user_id', $attendance->user_id)
+                ->ignore($attendance)],
             'clock_in_at' => ['nullable', 'date'],
             'clock_out_at' => ['nullable', 'date', 'after:clock_in_at'],
             'comment' => ['nullable', 'string', 'max:255'],
