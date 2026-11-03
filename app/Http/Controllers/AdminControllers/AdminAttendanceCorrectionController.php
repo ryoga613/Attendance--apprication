@@ -22,6 +22,17 @@ class AdminAttendanceCorrectionController extends Controller
 
         Gate::authorize('update', $attendance);
 
+        // 承認待ちの申請があるときに直接修正すると、後で申請を承認したときに上書きされてしまうため修正させない
+        $hasPendingApplication = $attendance->attendanceCorrections()
+            ->where('approval_status', ApprovalStatus::PENDING)
+            ->exists();
+
+        if ($hasPendingApplication) {
+            return redirect()
+                ->route('admin.attendance.show', $attendance->id)
+                ->withErrors(['comment' => '承認待ちの申請があるため修正できません。']);
+        }
+
         DB::transaction(function () use ($request, $attendance, $workDate) {
             $clockIn = $workDate.' '.$request->new_clock_in;
             $clockOut = $workDate.' '.$request->new_clock_out;
