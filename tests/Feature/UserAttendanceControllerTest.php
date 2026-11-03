@@ -159,6 +159,21 @@ class UserAttendanceControllerTest extends TestCase
         ]);
     }
 
+    public function test_日本時間の朝に出勤すると日本時間の日付と時刻で記録される()
+    {
+        // UTCの10/15 23:30 = 日本時間の10/16 8:30
+        Carbon::setTestNow(Carbon::parse('2026-10-15 23:30:00', 'UTC'));
+
+        $user = $this->createUser(['attendance_status' => '勤務外']);
+
+        $this->actingAs($user)->post('/attendance', ['action' => 'clock_in']);
+
+        $attendance = Attendance::where('user_id', $user->id)->first();
+
+        $this->assertSame('2026-10-16', $attendance->work_date->format('Y-m-d'));
+        $this->assertSame('2026-10-16 08:30:00', $attendance->clock_in_at->format('Y-m-d H:i:s'));
+    }
+
     public function test_出勤中は出勤を二重に押しても勤怠が増えない()
     {
         Carbon::setTestNow('2026-10-16 10:00:00');

@@ -148,6 +148,41 @@ class UserAttendanceCorrectionControllerTest extends TestCase
                 && $d['breaks'][0]['break_out'] === '13:30');
     }
 
+    public function test_承認済みの申請しかない場合は修正フォームが表示される()
+    {
+        $this->makeCorrection(null, '承認済み');
+
+        $this->asUser()->get(route('attendance.detail', $this->attendance->id))
+            ->assertStatus(200)
+            ->assertDontSee('承認待ちのため修正できません')
+            ->assertViewHas('data', fn ($d) => $d['application'] === null
+                && $d['clock_in'] === '09:00'
+                && $d['breaks'][0]['break_in'] === '12:00');
+    }
+
+    public function test_承認待ちの申請がある場合は修正できない表示になる()
+    {
+        $this->makeCorrection();
+
+        $this->asUser()->get(route('attendance.detail', $this->attendance->id))
+            ->assertStatus(200)
+            ->assertSee('承認待ちのため修正できません');
+    }
+
+    public function test_承認済みの申請があっても再び修正を申請できる()
+    {
+        $this->makeCorrection(null, '承認済み');
+
+        $this->asUser()
+            ->post('/attendance/'.$this->attendance->id, $this->changedInput())
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('attendance_corrections', [
+            'attendance_id' => $this->attendance->id,
+            'approval_status' => '承認待ち',
+        ]);
+    }
+
     public function test_他人の勤怠詳細は見れない()
     {
         $other = User::factory()->create();
