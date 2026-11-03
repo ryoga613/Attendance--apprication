@@ -39,7 +39,7 @@ class AttendanceCorrectionRequest extends FormRequest
                 $clockOut = Carbon::parse($this->new_clock_out);
 
                 if ($clockOut->lte($clockIn)) {
-                    $validator->errors()->add('new_clock_out', '出勤時間が不適切な値です。');
+                    $validator->errors()->add('new_clock_out', '出勤時間もしくは退勤時間が不適切な値です。');
 
                     return;
                 }
@@ -62,12 +62,12 @@ class AttendanceCorrectionRequest extends FormRequest
 
                     // ② 休憩終了時刻は開始時刻より後
                     if ($bEnd->lte($bStart)) {
-                        $validator->errors()->add("new_break_out.{$i}", '休憩時間または退勤時間が不適切な値です。');
+                        $validator->errors()->add("new_break_out.{$i}", '休憩時間が不適切な値です。');
                     }
 
                     // ③ 休憩は勤務時間内（出勤時刻以降かつ退勤時刻以前）
                     if ($bStart->lt($clockIn) || $bEnd->gt($clockOut)) {
-                        $validator->errors()->add("new_break_in.{$i}", '休憩時間または退勤時間が不適切な値です。');
+                        $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です。');
                     }
 
                     // ④ 休憩時間の重複禁止チェック
@@ -75,7 +75,7 @@ class AttendanceCorrectionRequest extends FormRequest
                         // 時間帯が重なっているかどうかの判定 logic:
                         // (StartA < EndB) && (EndA > StartB)
                         if ($bStart->lt($existing['end']) && $bEnd->gt($existing['start'])) {
-                            $validator->errors()->add("new_break_in.{$i}", '休憩時間が重複しています。');
+                            $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です。');
                             break;
                         }
                     }
