@@ -52,7 +52,7 @@
                         <p class="table__description--item">{{ $application->comment }}</p>
                     </td>
                     <td class="table__description">
-                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->application_date)->format('Y/m/d') }}</p>
+                        <p class="table__description--item">{{ $application->created_at->format('Y/m/d') }}</p>
                     </td>
                     <td class="table__description">
                         <a class="table__item--detail-link" href="{{ url('/stamp_correction_request/approve/' . $application['id']) }}">詳細</a>
@@ -100,7 +100,7 @@
                         <p class="table__description--item">{{ $application->comment }}</p>
                     </td>
                     <td class="table__description">
-                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->application_date)->format('Y/m/d') }}</p>
+                        <p class="table__description--item">{{ $application->created_at->format('Y/m/d') }}</p>
                     </td>
                     <td class="table__description">
                         <a class="table__item--detail-link" href="{{ url('/stamp_correction_request/approve/' . $application['id']) }}">詳細</a>

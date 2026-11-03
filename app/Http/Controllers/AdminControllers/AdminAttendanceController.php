@@ -8,7 +8,6 @@ use App\Models\AttendanceCorrection;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class AdminAttendanceController extends Controller
@@ -34,7 +33,7 @@ class AdminAttendanceController extends Controller
     public function detail($id)
     {
 
-        $attendance = Attendance::with('breaks')->findOrFail($id);
+        $attendance = Attendance::with(['breaks', 'user'])->findOrFail($id);
 
         $application = AttendanceCorrection::where('attendance_id', $id)->first();
 
@@ -53,7 +52,8 @@ class AdminAttendanceController extends Controller
             ])->values()->all(),
             'comment' => $attendance->comment,
         ];
-        $user = Auth::user();
+        // 名前欄には、ログイン中の管理者ではなく勤怠の持ち主(スタッフ)を表示する
+        $user = $attendance->user;
 
         return view('admin.admin-detail', compact('user', 'attendanceRecord'));
     }

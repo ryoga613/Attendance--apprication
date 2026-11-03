@@ -103,6 +103,24 @@ class AdminAttendanceControllerTest extends TestCase
         $this->assertEquals('13:00', $record['breaks'][0]['break_out']);
     }
 
+    public function test_勤務詳細の名前には管理者ではなくスタッフの名前が表示される()
+    {
+        $this->admin->update(['name' => '管理者花子']);
+
+        $staff = User::factory()->create(['name' => 'スタッフ次郎']);
+        $attendance = Attendance::factory()->create([
+            'user_id' => $staff->id,
+            'clock_in_at' => now()->setTime(9, 0),
+            'clock_out_at' => now()->setTime(18, 0),
+        ]);
+
+        $this->actingAs($this->admin, 'admin')
+            ->get("admin/attendance/{$attendance->id}")
+            ->assertStatus(200)
+            ->assertSee('スタッフ次郎')
+            ->assertDontSee('管理者花子');
+    }
+
     public function test_スタッフ一覧が見れる()
     {
         $response = $this->actingAs($this->admin, 'admin')->get('admin/staff/list');
