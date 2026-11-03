@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\AdminControllers;
 
+use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\AttendanceCorrection;
@@ -35,7 +36,11 @@ class AdminAttendanceController extends Controller
 
         $attendance = Attendance::with(['breaks', 'user'])->findOrFail($id);
 
-        $application = AttendanceCorrection::where('attendance_id', $id)->first();
+        // 承認待ちの申請(ある間は、管理者も直接修正できない)
+        $application = AttendanceCorrection::where('attendance_id', $id)
+            ->where('approval_status', ApprovalStatus::PENDING)
+            ->latest()
+            ->first();
 
         Gate::authorize('view', $attendance);
 

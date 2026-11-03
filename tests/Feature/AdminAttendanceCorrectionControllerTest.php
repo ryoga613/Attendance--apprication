@@ -135,6 +135,61 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         ]);
     }
 
+    public function test_承認待ちの申請がある勤怠は管理者が直接修正できない()
+    {
+        $this->makeCorrection();
+
+        $response = $this->asAdmin()->post("/admin/attendance/{$this->attendance->id}", [
+            'new_clock_in' => '15:00',
+            'new_clock_out' => '18:00',
+            'comment' => '管理者による修正',
+        ]);
+
+        $response->assertRedirect(route('admin.attendance.show', $this->attendance->id));
+        $response->assertSessionHasErrors(['comment' => '承認待ちの申請があるため修正できません。']);
+
+        // 勤怠は変わらず、管理者の修正記録も作られない
+        $this->assertDatabaseHas('attendances', [
+            'id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 09:00:00',
+        ]);
+        $this->assertDatabaseMissing('attendance_corrections', ['approval_status' => '承認済み']);
+    }
+
+    public function test_承認済みの申請だけなら管理者は直接修正できる()
+    {
+        $this->makeCorrection()->update(['approval_status' => '承認済み']);
+
+        $this->asAdmin()->post("/admin/attendance/{$this->attendance->id}", [
+            'new_clock_in' => '15:00',
+            'new_clock_out' => '18:00',
+            'comment' => '管理者による修正',
+        ])->assertRedirect(route('admin.attendance.list'));
+
+        $this->assertDatabaseHas('attendances', [
+            'id' => $this->attendance->id,
+            'clock_in_at' => '2026-10-16 15:00:00',
+        ]);
+    }
+
+    public function test_承認待ちの申請がある勤怠の詳細には修正ボタンが表示されない()
+    {
+        $this->makeCorrection();
+
+        $this->asAdmin()->get("/admin/attendance/{$this->attendance->id}")
+            ->assertStatus(200)
+            ->assertSee('承認待ちのため修正できません')
+            ->assertDontSee('form__button--submit');
+    }
+
+    public function test_承認待ちの申請がない勤怠の詳細には修正ボタンが表示される()
+    {
+        $this->asAdmin()->get("/admin/attendance/{$this->attendance->id}")
+            ->assertStatus(200)
+            ->assertSee('form__button--submit')
+            ->assertDontSee('承認待ちのため修正できません');
+    }
+
     /** コメントが空だと修正できない */
     public function test_コメントなしだと修正できない()
     {
