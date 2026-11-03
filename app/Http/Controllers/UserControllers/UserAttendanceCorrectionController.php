@@ -92,7 +92,9 @@ class UserAttendanceCorrectionController extends Controller
 
         $attendance = Attendance::with('breaks')->findOrFail($id);
 
+        // 承認待ちの申請だけを取得する(承認済みの申請があっても、再び修正できるようにする)
         $application = $attendance->attendanceCorrections()
+            ->where('approval_status', ApprovalStatus::PENDING)
             ->with('proposalBreaks')
             ->latest()
             ->first();
