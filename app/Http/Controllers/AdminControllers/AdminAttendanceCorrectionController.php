@@ -94,11 +94,14 @@ class AdminAttendanceCorrectionController extends Controller
 
     public function approveStampCorrectionRequest($id)
     {
-        $application = AttendanceCorrection::with('proposalBreaks')->findOrFail($id);
+        $application = AttendanceCorrection::with(['proposalBreaks', 'user'])->findOrFail($id);
 
-        $user = Auth::guard('admin')->user() ?? Auth::user();
+        $admin = Auth::guard('admin')->user() ?? Auth::user();
 
-        Gate::forUser($user)->authorize('view', $application);
+        Gate::forUser($admin)->authorize('view', $application);
+
+        // 名前欄には、ログイン中の管理者ではなく申請したスタッフを表示する
+        $user = $application->user;
 
         return view('admin.admin-application-detail', compact('application', 'user'));
     }

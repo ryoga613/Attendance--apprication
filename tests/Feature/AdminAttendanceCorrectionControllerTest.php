@@ -190,7 +190,7 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
 
         $this->asAdmin()->get("/admin/attendance/{$this->attendance->id}")
             ->assertStatus(200)
-            ->assertSee('承認待ちのため修正できません')
+            ->assertSee('承認待ちのため修正はできません。')
             ->assertDontSee('form__button--submit');
     }
 
@@ -199,7 +199,7 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         $this->asAdmin()->get("/admin/attendance/{$this->attendance->id}")
             ->assertStatus(200)
             ->assertSee('form__button--submit')
-            ->assertDontSee('承認待ちのため修正できません');
+            ->assertDontSee('承認待ちのため修正はできません。');
     }
 
     /** コメントが空だと修正できない */
@@ -230,6 +230,18 @@ class AdminAttendanceCorrectionControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewIs('admin.admin-application-detail');
         $response->assertViewHas('application', fn ($a) => $a->id === $correction->id);
+    }
+
+    public function test_申請の詳細画面の名前には管理者ではなく申請したスタッフの名前が表示される()
+    {
+        $this->admin->update(['name' => '管理者花子']);
+        $this->staff->update(['name' => 'スタッフ次郎']);
+        $correction = $this->makeCorrection();
+
+        $this->asAdmin()->get('/stamp_correction_request/approve/'.$correction->id)
+            ->assertStatus(200)
+            ->assertSee('value="スタッフ次郎"', false)
+            ->assertDontSee('管理者花子');
     }
 
     /** 申請を承認すると、勤怠に反映されて承認済みになる */

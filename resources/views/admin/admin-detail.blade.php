@@ -114,7 +114,7 @@
                         <button class="form__button--submit" type="submit">修正</button>
                     @else
                         {{-- 承認待ちの申請がある間は直接修正できない(先に申請を承認する) --}}
-                        <p class="readonly-message">承認待ちのため修正できません</p>
+                        <p class="readonly-message">承認待ちのため修正はできません。</p>
                     @endif
                 </div>
         </form>
