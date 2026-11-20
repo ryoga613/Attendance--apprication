@@ -154,7 +154,7 @@ class UserAttendanceCorrectionControllerTest extends TestCase
 
         $this->asUser()->get(route('attendance.detail', $this->attendance->id))
             ->assertStatus(200)
-            ->assertDontSee('承認待ちのため修正できません')
+            ->assertDontSee('承認待ちのため修正はできません。')
             ->assertViewHas('data', fn ($d) => $d['application'] === null
                 && $d['clock_in'] === '09:00'
                 && $d['breaks'][0]['break_in'] === '12:00');
@@ -166,7 +166,7 @@ class UserAttendanceCorrectionControllerTest extends TestCase
 
         $this->asUser()->get(route('attendance.detail', $this->attendance->id))
             ->assertStatus(200)
-            ->assertSee('承認待ちのため修正できません');
+            ->assertSee('承認待ちのため修正はできません。');
     }
 
     public function test_承認済みの申請があっても再び修正を申請できる()
