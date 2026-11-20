@@ -239,6 +239,65 @@ class UserAttendanceCorrectionControllerTest extends TestCase
         $this->assertDatabaseCount('attendance_corrections', 0);
     }
 
+    // ---------- 修正申請のバリデーション ----------
+
+    private function assertCorrectionError(array $override, array $errors): void
+    {
+        $this->asUser()
+            ->post('/attendance/'.$this->attendance->id, $this->changedInput($override))
+            ->assertSessionHasErrors($errors);
+
+        $this->assertDatabaseCount('attendance_corrections', 0);
+    }
+
+    public function test_出勤時間が退勤時間より後だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['new_clock_in' => '20:00'],
+            ['new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です']
+        );
+    }
+
+    public function test_退勤時間が出勤時間より前だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['new_clock_out' => '09:00'],
+            ['new_clock_out' => '出勤時間もしくは退勤時間が不適切な値です']
+        );
+    }
+
+    public function test_休憩開始時間が出勤時間より前だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['new_break_in' => ['09:00']],
+            ['new_break_in.0' => '休憩時間が不適切な値です']
+        );
+    }
+
+    public function test_休憩開始時間が退勤時間より後だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['new_break_in' => ['19:30'], 'new_break_out' => ['20:00']],
+            ['new_break_in.0' => '休憩時間が不適切な値です']
+        );
+    }
+
+    public function test_休憩終了時間が退勤時間より後だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['new_break_out' => ['19:30']],
+            ['new_break_out.0' => '休憩時間もしくは退勤時間が不適切な値です']
+        );
+    }
+
+    public function test_備考が未入力だとエラーになる()
+    {
+        $this->assertCorrectionError(
+            ['comment' => ''],
+            ['comment' => '備考を記入してください']
+        );
+    }
+
     public function test_他人の勤怠は申請できない()
     {
         $other = User::factory()->create();

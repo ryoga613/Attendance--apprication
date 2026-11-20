@@ -39,7 +39,7 @@ class AttendanceCorrectionRequest extends FormRequest
                 $clockOut = Carbon::parse($this->new_clock_out);
 
                 if ($clockOut->lte($clockIn)) {
-                    $validator->errors()->add('new_clock_out', '出勤時間もしくは退勤時間が不適切な値です。');
+                    $validator->errors()->add('new_clock_out', '出勤時間もしくは退勤時間が不適切な値です');
 
                     return;
                 }
@@ -60,14 +60,16 @@ class AttendanceCorrectionRequest extends FormRequest
                     $bStart = Carbon::parse($breakIn);
                     $bEnd = Carbon::parse($breakOut);
 
-                    // ② 休憩終了時刻は開始時刻より後
-                    if ($bEnd->lte($bStart)) {
-                        $validator->errors()->add("new_break_out.{$i}", '休憩時間が不適切な値です。');
+                    // ② 休憩開始時刻は勤務時間内（出勤時刻以降かつ退勤時刻以前）
+                    if ($bStart->lt($clockIn) || $bStart->gt($clockOut)) {
+                        $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です');
                     }
 
-                    // ③ 休憩は勤務時間内（出勤時刻以降かつ退勤時刻以前）
-                    if ($bStart->lt($clockIn) || $bEnd->gt($clockOut)) {
-                        $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です。');
+                    // ③ 休憩終了時刻は開始時刻より後、かつ退勤時刻以前
+                    if ($bEnd->lte($bStart)) {
+                        $validator->errors()->add("new_break_out.{$i}", '休憩時間が不適切な値です');
+                    } elseif ($bEnd->gt($clockOut)) {
+                        $validator->errors()->add("new_break_out.{$i}", '休憩時間もしくは退勤時間が不適切な値です');
                     }
 
                     // ④ 休憩時間の重複禁止チェック
@@ -75,7 +77,7 @@ class AttendanceCorrectionRequest extends FormRequest
                         // 時間帯が重なっているかどうかの判定 logic:
                         // (StartA < EndB) && (EndA > StartB)
                         if ($bStart->lt($existing['end']) && $bEnd->gt($existing['start'])) {
-                            $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です。');
+                            $validator->errors()->add("new_break_in.{$i}", '休憩時間が不適切な値です');
                             break;
                         }
                     }
@@ -92,22 +94,21 @@ class AttendanceCorrectionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'new_clock_in.required' => '出勤時間を入力してください。',
-            'new_clock_in.date_format' => '出勤時間の形式が正しくありません。',
-            'new_clock_out.required' => '退勤時間を入力してください。',
-            'new_clock_out.date_format' => '退勤時間の形式が正しくありません。',
-            'new_clock_out.after' => '休憩時間または退勤時間が不適切な値です。',
+            'new_clock_in.required' => '出勤時間を入力してください',
+            'new_clock_in.date_format' => '出勤時間の形式が正しくありません',
+            'new_clock_out.required' => '退勤時間を入力してください',
+            'new_clock_out.date_format' => '退勤時間の形式が正しくありません',
 
-            'new_break_in.*.required_with' => '休憩開始時間を入力してください。',
+            'new_break_in.*.required_with' => '休憩開始時間を入力してください',
             'new_break_in.array' => '日時の形式が正しくありません',
             'new_break_in.*.date_format' => '日時の形式が正しくありません',
 
-            'new_break_out.*.required_with' => '休憩終了時間を入力してください。',
+            'new_break_out.*.required_with' => '休憩終了時間を入力してください',
             'new_break_out.array' => '日時の形式が正しくありません',
             'new_break_out.*.date_format' => '日時の形式が正しくありません',
 
-            'comment.required' => '備考を入力してください。',
-            'comment.string' => '備考を入力してください',
+            'comment.required' => '備考を記入してください',
+            'comment.string' => '備考を記入してください',
             'comment.max' => '備考は1000文字以内で入力してください',
         ];
     }
