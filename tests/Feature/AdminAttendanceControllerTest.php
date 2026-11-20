@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Attendance;
+use App\Models\AttendanceCorrection;
 use App\Models\ProposalBreak;
 use App\Models\User;
 use Carbon\Carbon;
@@ -142,6 +143,159 @@ class AdminAttendanceControllerTest extends TestCase
             ->assertStatus(200)
             ->assertSee('スタッフ次郎')
             ->assertDontSee('管理者花子');
+    }
+
+    // ---------- 動線上で選んだ勤怠が詳細に表示される ----------
+
+    // 「当日さん」の勤怠に休憩を2つ付ける
+    private function todayAttendanceWithBreaks(): Attendance
+    {
+        $attendance = Attendance::whereDate('work_date', '2026-10-16')->firstOrFail();
+        ProposalBreak::create([
+            'attendance_id' => $attendance->id,
+            'break_start_at' => '2026-10-16 12:00:00',
+            'break_end_at' => '2026-10-16 13:00:00',
+        ]);
+        ProposalBreak::create([
+            'attendance_id' => $attendance->id,
+            'break_start_at' => '2026-10-16 15:00:00',
+            'break_end_at' => '2026-10-16 15:15:00',
+        ]);
+
+        return $attendance;
+    }
+
+    private function assertDetailMatches($response, string $name, array $times): void
+    {
+        $response->assertStatus(200)
+            ->assertViewIs('admin.admin-detail')
+            ->assertSee('value="'.$name.'"', false)
+            ->assertSee('value="2026 年"', false)
+            ->assertSee('value="10/16(金)"', false);
+
+        $record = $response->viewData('attendanceRecord');
+        $this->assertSame($times['clock_in'], $record['clock_in']);
+        $this->assertSame($times['clock_out'], $record['clock_out']);
+        $this->assertSame($times['breaks'], $record['breaks']);
+    }
+
+    public function test_日次勤怠一覧で選んだ勤怠の詳細が表示される()
+    {
+        $attendance = $this->todayAttendanceWithBreaks();
+        $detailUrl = url('/admin/attendance/'.$attendance->id);
+
+        // 一覧の「詳細」リンクが、その日のその人の勤怠を指している
+        $this->openList('?date=2026-10-16')->assertSee('href="'.$detailUrl.'"', false);
+
+        $this->assertDetailMatches(
+            $this->actingAs($this->admin, 'admin')->get($detailUrl),
+            '当日さん',
+            [
+                'clock_in' => '09:00',
+                'clock_out' => '18:00',
+                'breaks' => [
+                    ['break_in' => '12:00', 'break_out' => '13:00'],
+                    ['break_in' => '15:00', 'break_out' => '15:15'],
+                ],
+            ]
+        );
+    }
+
+    public function test_スタッフ別勤怠一覧で選んだ勤怠の詳細が表示される()
+    {
+        $attendance = $this->todayAttendanceWithBreaks();
+        $detailUrl = url('/admin/attendance/'.$attendance->id);
+
+        $this->actingAs($this->admin, 'admin')
+            ->get('/admin/attendance/staff/'.$attendance->user_id.'?date=2026-10')
+            ->assertSee('href="'.$detailUrl.'"', false);
+
+        $this->assertDetailMatches(
+            $this->actingAs($this->admin, 'admin')->get($detailUrl),
+            '当日さん',
+            [
+                'clock_in' => '09:00',
+                'clock_out' => '18:00',
+                'breaks' => [
+                    ['break_in' => '12:00', 'break_out' => '13:00'],
+                    ['break_in' => '15:00', 'break_out' => '15:15'],
+                ],
+            ]
+        );
+    }
+
+    // ---------- 修正・承認の結果が詳細に反映される ----------
+
+    public function test_管理者が直接修正した内容が詳細に反映される()
+    {
+        $attendance = $this->todayAttendanceWithBreaks();
+
+        $this->actingAs($this->admin, 'admin')->post('/admin/attendance/'.$attendance->id, [
+            'new_clock_in' => '08:45',
+            'new_clock_out' => '17:30',
+            'new_break_in' => ['12:15', '15:00', '16:00'],
+            'new_break_out' => ['13:15', '15:15', '16:10'],
+            'comment' => '打刻漏れのため修正',
+        ])->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($this->admin, 'admin')->get('/admin/attendance/'.$attendance->id);
+
+        $this->assertDetailMatches($response, '当日さん', [
+            'clock_in' => '08:45',
+            'clock_out' => '17:30',
+            'breaks' => [
+                ['break_in' => '12:15', 'break_out' => '13:15'],
+                ['break_in' => '15:00', 'break_out' => '15:15'],
+                ['break_in' => '16:00', 'break_out' => '16:10'],
+            ],
+        ]);
+        $this->assertSame('打刻漏れのため修正', $response->viewData('attendanceRecord')['comment']);
+    }
+
+    public function test_承認した申請の内容が詳細に反映される()
+    {
+        $attendance = $this->todayAttendanceWithBreaks();
+        $staff = $attendance->user;
+
+        $this->actingAs($staff)->post('/attendance/'.$attendance->id, [
+            'new_clock_in' => '10:00',
+            'new_clock_out' => '19:00',
+            'new_break_in' => ['12:30', ''],
+            'new_break_out' => ['13:30', ''],
+            'comment' => '電車遅延のため',
+        ])->assertSessionHasNoErrors();
+
+        $correction = AttendanceCorrection::firstOrFail();
+        $this->actingAs($this->admin, 'admin')
+            ->post('/stamp_correction_request/approve/'.$correction->id)
+            ->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($this->admin, 'admin')->get('/admin/attendance/'.$attendance->id);
+
+        $this->assertDetailMatches($response, '当日さん', [
+            'clock_in' => '10:00',
+            'clock_out' => '19:00',
+            'breaks' => [
+                ['break_in' => '12:30', 'break_out' => '13:30'],
+            ],
+        ]);
+        $this->assertSame('電車遅延のため', $response->viewData('attendanceRecord')['comment']);
+    }
+
+    public function test_255文字を超える備考でも直接修正できる()
+    {
+        $attendance = $this->todayAttendanceWithBreaks();
+        $comment = str_repeat('あ', 1000);
+
+        $this->actingAs($this->admin, 'admin')->post('/admin/attendance/'.$attendance->id, [
+            'new_clock_in' => '09:00',
+            'new_clock_out' => '18:00',
+            'new_break_in' => ['12:00', '15:00'],
+            'new_break_out' => ['13:00', '15:15'],
+            'comment' => $comment,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame($comment, $attendance->fresh()->comment);
     }
 
     public function test_スタッフ一覧が見れる()

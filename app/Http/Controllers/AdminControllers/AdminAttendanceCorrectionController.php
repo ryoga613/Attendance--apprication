@@ -40,6 +40,7 @@ class AdminAttendanceCorrectionController extends Controller
             $attendance->update([
                 'clock_in_at' => $clockIn,
                 'clock_out_at' => $clockOut,
+                'comment' => $request->comment,
             ]);
 
             $attendanceCorrection = AttendanceCorrection::create([
@@ -119,6 +120,7 @@ class AdminAttendanceCorrectionController extends Controller
             $attendance->update([
                 'clock_in_at' => $application->clock_in_at,
                 'clock_out_at' => $application->clock_out_at,
+                'comment' => $application->comment,
             ]);
 
             // 申請に含まれない休憩は、申請で削除されたものとして消す
